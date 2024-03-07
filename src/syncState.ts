@@ -3,15 +3,23 @@ import type { IpcMainEvent } from "electron";
 
 import { getIpcMain, getIpcRenderer, IpcChannel } from "./common";
 
-export type SynchronizeStateFunction<S> = (store: Store<S>) => void;
+/**
+ * Function that either sends requests from the "renderer" to the "main" process
+ * to get Redux state, or adds a listener to the "main" process that sends
+ * Redux state to the "renderer" when requested.
+ * @template State Type definition for Redux state.
+ */
+export type SynchronizeStateFunction<State> = (store: Store<State>) => void;
 
 /**
- * Adds an IPC listener that allows the renderer process to get the current
+ * Adds an IPC listener that allows the "renderer" process to get the current
  * state when configuring the store. This is so state is persisted between
  * window reloads.
+ * @template State Type definition for Redux state.
+ * @param store Redux store for the current process.
  */
-export async function listenForStateRequests<S>(
-  store: Store<S>,
+export async function listenForStateRequests<State>(
+  store: Store<State>,
 ): Promise<void> {
   const ipcMain = getIpcMain();
 
@@ -29,15 +37,17 @@ export async function listenForStateRequests<S>(
 }
 
 /**
- * Returns the state from the main process. If the state wasn't found, falls
+ * Returns the state from the "main" process. If the state wasn't found, falls
  * back to store.getState() (from the specified store).
  *
  * Important! This is a synchronous function, so it blocks the main thread until
- * the state is returned from the main process. You should only use this function
+ * the state is returned from the "main" process. You should only use this function
  * in development to ensure state doesn't fall out of sync due to HMR or
  * browser refresh.
+ * @template State Type definition for Redux state.
+ * @param store Redux store for the current process.
  */
-export function requestStateFromMain<S>(store: Store<S>): S {
+export function requestStateFromMain<State>(store: Store<State>): State {
   const ipcRenderer = getIpcRenderer();
 
   const stateFromMain = ipcRenderer.sendSync(IpcChannel.ForStateSync);

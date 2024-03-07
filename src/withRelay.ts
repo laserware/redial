@@ -17,30 +17,21 @@ import {
   type SynchronizeStateFunction,
 } from "./syncState";
 
-interface WithElectronSharedOptions<State> {
-  createForwardingMiddleware: ForwardToMiddlewareFunction;
-  replayAction: ReplayActionFunction<State>;
-}
-
-interface WithElectronMainOptions<State>
-  extends WithElectronSharedOptions<State> {
-  listenForStateRequests: SynchronizeStateFunction<State>;
-}
-
-interface WithElectronRendererOptions<State>
-  extends WithElectronSharedOptions<State> {
-  requestStateFromMain: SynchronizeStateFunction<State>;
-}
-
-type WithElectronCallbackOptions<
-  State,
-  PN extends ProcessName,
-> = PN extends "main"
-  ? WithElectronMainOptions<State>
-  : WithElectronRendererOptions<State>;
-
-type WithElectronInitializer<State, PN extends ProcessName> = (
-  options: WithElectronCallbackOptions<State, PN>,
+/**
+ * @param createForwardingMiddleware
+ *    Creates the forwarding middleware that forwards dispatched actions to the
+ *    opposing process.
+ * @param replayAction
+ *    Replays the dispatched action from the opposing process in the current process.
+ * @param synchronize
+ *    Adds a listener to send Redux state from the main process to the "renderer" process
+ *    when requested in the "main" process, or sends a synchronous request to the "main"
+ *    process to get the current Redux state in the "renderer" process.
+ */
+type WithRelayInitializer<State> = (
+  createForwardingMiddleware: ForwardToMiddlewareFunction,
+  replayAction: ReplayActionFunction<State>,
+  synchronize: SynchronizeStateFunction<State>,
 ) => Store<State>;
 
 /**
@@ -49,37 +40,56 @@ type WithElectronInitializer<State, PN extends ProcessName> = (
  *
  * Note that you _must_ return the Redux store from the initializer callback.
  *
- * @param processName Process name in which to create store ("main" or "renderer")
- * @param initializer Callback with Electron IPC middleware APIs as the options argument
+ * @template State Type definition for Redux state.
+ * @template PN Process name in which to create store ("main" or "renderer").
+ *
+ * @param processName Process name in which to create store ("main" or "renderer").
+ * @param initializer Callback with Electron IPC middleware APIs as the options argument.
  *
  * @example
  *  import { configureStore } from "@reduxjs/toolkit";
  *  import { withRelay } from "@laserware/relay";
  *
- *  function createStore() {
+ *  import { rootReducer } from "./rootReducer";
  *
+ *  function createStore() {
+ *    return withRelay(
+ *      "main",
+ *      (createForwardToMainMiddleware, replayAction, listenForStateRequests) => {
+ *        const forwardToRendererMiddleware = createForwardingMiddleware();
+ *
+ *        const store = configureStore({
+ *          reducer: rootReducer,
+ *          middleware: [forwardToRendererMiddleware],
+ *        });
+ *
+ *        replayAction(store);
+ *
+ *        listenForStateRequests(store);
+ *
+ *        return store;
+ *      },
+ *    );
  *  }
  */
 export function withRelay<State, PN extends ProcessName>(
   processName: PN,
-  initializer: WithElectronInitializer<State, PN>,
+  initializer: WithRelayInitializer<State>,
 ): Store<State> {
   if (processName === "main") {
-    // @ts-ignore I don't know why this isn't working, but it's valid.
-    return initializer({
-      createForwardingMiddleware: createForwardToMainMiddleware,
-      replayAction: replayActionInMain,
+    return initializer(
+      createForwardToMainMiddleware,
+      replayActionInMain,
       listenForStateRequests,
-    });
+    );
   }
 
   if (processName === "renderer") {
-    // @ts-ignore I don't know why this isn't working, but it's valid.
-    return initializer({
-      createForwardingMiddleware: createForwardToRendererMiddleware,
-      replayAction: replayActionInRenderer,
+    return initializer(
+      createForwardToRendererMiddleware,
+      replayActionInRenderer,
       requestStateFromMain,
-    });
+    );
   }
 
   // prettier-ignore

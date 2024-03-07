@@ -6,11 +6,14 @@ interface ForwardedAction extends Action {
   meta?: { wasAlreadyForwarded: boolean };
 }
 
+/**
+ * Function that returns the forwarding middleware.
+ */
 export type ForwardToMiddlewareFunction = () => Middleware;
 
 /**
- * Whenever an action is fired from the main process, forward it to the
- * renderer process to ensure global state is in sync.
+ * Whenever an action is fired from the "main" process, forward it to the
+ * "renderer" process to ensure global state is in sync.
  */
 export function createForwardToRendererMiddleware(): Middleware {
   const { webContents } = require("electron");
@@ -47,8 +50,8 @@ export function createForwardToRendererMiddleware(): Middleware {
 }
 
 /**
- * Whenever an action is fired from the renderer process, forward it to the
- * main process to ensure global state is in sync.
+ * Whenever an action is fired from the "renderer" process, forward it to the
+ * "main" process to ensure global state is in sync.
  */
 export function createForwardToMainMiddleware(): Middleware {
   const ipcRenderer = getIpcRenderer();
@@ -75,6 +78,11 @@ export function createForwardToMainMiddleware(): Middleware {
   };
 }
 
+/**
+ * Returns true if the specified action has already been forwarded to the
+ * opposing process.
+ * @param action Action to check for meta indicating action already forwarded.
+ */
 function wasActionAlreadyForwarded(action: unknown): boolean {
   const forwardedAction = action as ForwardedAction;
 
