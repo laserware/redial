@@ -56,5 +56,4 @@ dist
 
 .yarn/*
 yarn.lock
-package-lock.json
 .pnp.*
