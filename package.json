@@ -1,0 +1,58 @@
+{
+  "name": "@laserware/relay",
+  "version": "1.0.0",
+  "description": "Redux middleware layer over Electron IPC.",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "repository": {
+    "url": "git+https://github.com/laserware/relay.git",
+    "type": "git"
+  },
+  "author": "Mike Rourke <mike.w.rourke@gmail.com>",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "keywords": [],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && cd dist && npx prettier --write index.d.ts",
+    "prepublishOnly": "npm run build",
+    "preversion": "npm run eslint && npm run typecheck",
+    "version": "npm run prettier && git add -A src",
+    "postversion": "git push && git push --tags",
+    "typecheck": "tsc --noEmit",
+    "prettier": "prettier --cache --write src",
+    "prettier:ci": "prettier --check src",
+    "eslint": "eslint --cache src",
+    "vitest": "vitest"
+  },
+  "dependencies": {
+    "@laserware/stasis": "^3.0.2"
+  },
+  "devDependencies": {
+    "@laserware/eslint-config": "^2.0.0",
+    "@rushstack/eslint-patch": "^1.7.2",
+    "electron": "^29.1.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "tslib": "^2.6.2",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.2",
+    "vitest": "^1.3.1"
+  },
+  "prettier": {
+    "trailingComma": "all"
+  }
+}
