@@ -1,5 +1,5 @@
 {
-  "name": "@laserware/relay",
+  "name": "@laserware/redial",
   "version": "1.0.0",
   "description": "Redux middleware layer over Electron IPC.",
   "type": "module",
@@ -14,7 +14,7 @@
     }
   },
   "repository": {
-    "url": "git+https://github.com/laserware/relay.git",
+    "url": "git+https://github.com/laserware/redial.git",
     "type": "git"
   },
   "author": "Mike Rourke <mike.w.rourke@gmail.com>",

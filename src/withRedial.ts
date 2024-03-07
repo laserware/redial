@@ -28,7 +28,7 @@ import {
  *    when requested in the "main" process, or sends a synchronous request to the "main"
  *    process to get the current Redux state in the "renderer" process.
  */
-type WithRelayInitializer<State> = (
+type WithRedialInitializer<State> = (
   createForwardingMiddleware: ForwardToMiddlewareFunction,
   replayAction: ReplayActionFunction<State>,
   synchronize: SynchronizeStateFunction<State>,
@@ -48,12 +48,12 @@ type WithRelayInitializer<State> = (
  *
  * @example
  *  import { configureStore } from "@reduxjs/toolkit";
- *  import { withRelay } from "@laserware/relay";
+ *  import { withRedial } from "@laserware/redial";
  *
  *  import { rootReducer } from "./rootReducer";
  *
  *  function createStore() {
- *    return withRelay(
+ *    return withRedial(
  *      "main",
  *      (createForwardToMainMiddleware, replayAction, listenForStateRequests) => {
  *        const forwardToRendererMiddleware = createForwardingMiddleware();
@@ -72,9 +72,9 @@ type WithRelayInitializer<State> = (
  *    );
  *  }
  */
-export function withRelay<State, PN extends ProcessName>(
+export function withRedial<State, PN extends ProcessName>(
   processName: PN,
-  initializer: WithRelayInitializer<State>,
+  initializer: WithRedialInitializer<State>,
 ): Store<State> {
   if (processName === "main") {
     return initializer(

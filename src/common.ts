@@ -1,8 +1,8 @@
 import type { IpcMain, IpcRenderer } from "electron";
 
 export enum IpcChannel {
-  ForMiddleware = "@laserware/relay/middleware",
-  ForStateSync = "@laserware/relay/state-sync",
+  ForMiddleware = "@laserware/redial/middleware",
+  ForStateSync = "@laserware/redial/state-sync",
 }
 
 export type ProcessName = "main" | "renderer";
