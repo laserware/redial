@@ -9,13 +9,6 @@ import type {
 import { getIpcMain, getIpcRenderer, IpcChannel } from "./common";
 
 /**
- * Function that replays the dispatched action from the opposing process in
- * the current process (i.e., in the "renderer" store, dispatches an action
- * when forwarded from the "main" process).
- */
-export type ReplayActionFunction<State> = (store: Store<State>) => void;
-
-/**
  * Listens for actions that were dispatched from the "renderer" process and
  * dispatches the action in the "main" process to keep the store in sync.
  * @template State Type definition for Redux state.

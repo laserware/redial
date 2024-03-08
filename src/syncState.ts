@@ -4,14 +4,6 @@ import type { IpcMainEvent } from "electron";
 import { getIpcMain, getIpcRenderer, IpcChannel } from "./common";
 
 /**
- * Function that either sends requests from the "renderer" to the "main" process
- * to get Redux state, or adds a listener to the "main" process that sends
- * Redux state to the "renderer" when requested.
- * @template State Type definition for Redux state.
- */
-export type SynchronizeStateFunction<State> = (store: Store<State>) => void;
-
-/**
  * Adds an IPC listener that allows the "renderer" process to get the current
  * state when configuring the store. This is so state is persisted between
  * window reloads.

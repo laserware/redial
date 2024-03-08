@@ -1,26 +1,18 @@
-import type { Store } from "@laserware/stasis";
+import type { Middleware, Store } from "@laserware/stasis";
 
 import type { ProcessName } from "./common";
 import {
   createForwardToRendererMiddleware,
   createForwardToMainMiddleware,
-  type ForwardToMiddlewareFunction,
 } from "./middleware";
-import {
-  replayActionInMain,
-  replayActionInRenderer,
-  type ReplayActionFunction,
-} from "./replay";
-import {
-  requestStateFromMain,
-  listenForStateRequests,
-  type SynchronizeStateFunction,
-} from "./syncState";
+import { replayActionInMain, replayActionInRenderer } from "./replay";
+import { requestStateFromMain, listenForStateRequests } from "./syncState";
 
 /**
+ * Initializer callback used in the withRedial function.
+ * @callback WithRedialInitializer
  * @param createForwardingMiddleware
- *    Creates the forwarding middleware that forwards dispatched actions to the
- *    opposing process.
+ *    Creates the forwarding middleware that forwards dispatched actions to the opposing process.
  * @param replayAction
  *    Replays the dispatched action from the opposing process in the current process.
  * @param synchronize
@@ -29,9 +21,9 @@ import {
  *    process to get the current Redux state in the "renderer" process.
  */
 type WithRedialInitializer<State> = (
-  createForwardingMiddleware: ForwardToMiddlewareFunction,
-  replayAction: ReplayActionFunction<State>,
-  synchronize: SynchronizeStateFunction<State>,
+  createForwardingMiddleware: () => Middleware,
+  replayAction: (store: Store<State>) => void,
+  synchronize: (store: Store<State>) => void,
 ) => Store<State>;
 
 /**
@@ -78,7 +70,7 @@ export function withRedial<State, PN extends ProcessName>(
 ): Store<State> {
   if (processName === "main") {
     return initializer(
-      createForwardToMainMiddleware,
+      createForwardToRendererMiddleware,
       replayActionInMain,
       listenForStateRequests,
     );
@@ -86,7 +78,7 @@ export function withRedial<State, PN extends ProcessName>(
 
   if (processName === "renderer") {
     return initializer(
-      createForwardToRendererMiddleware,
+      createForwardToMainMiddleware,
       replayActionInRenderer,
       requestStateFromMain,
     );
