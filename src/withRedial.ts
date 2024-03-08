@@ -47,30 +47,30 @@ type WithRedialInitializer<State> = (
  * @param initializer Callback with Electron IPC middleware APIs as the options argument.
  *
  * @example
- *  import { configureStore } from "@reduxjs/toolkit";
- *  import { withRedial } from "@laserware/redial";
+ * import { configureStore } from "@reduxjs/toolkit";
+ * import { withRedial } from "@laserware/redial";
  *
- *  import { rootReducer } from "./rootReducer";
+ * import { rootReducer } from "./rootReducer";
  *
- *  function createStore() {
- *    return withRedial(
- *      "main",
- *      (createForwardToMainMiddleware, replayAction, listenForStateRequests) => {
- *        const forwardToRendererMiddleware = createForwardingMiddleware();
+ * function createStore() {
+ *   return withRedial(
+ *     "main",
+ *     (createForwardToMainMiddleware, replayAction, listenForStateRequests) => {
+ *       const forwardToRendererMiddleware = createForwardingMiddleware();
  *
- *        const store = configureStore({
- *          reducer: rootReducer,
- *          middleware: [forwardToRendererMiddleware],
- *        });
+ *       const store = configureStore({
+ *         reducer: rootReducer,
+ *         middleware: [forwardToRendererMiddleware],
+ *       });
  *
- *        replayAction(store);
+ *       replayAction(store);
  *
- *        listenForStateRequests(store);
+ *       listenForStateRequests(store);
  *
- *        return store;
- *      },
- *    );
- *  }
+ *       return store;
+ *     },
+ *   );
+ * }
  */
 export function withRedial<State, PN extends ProcessName>(
   processName: PN,
