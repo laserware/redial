@@ -1,10 +1,16 @@
-import type { Middleware, Action } from "@laserware/stasis";
+import type {
+  Middleware,
+  UnknownAction,
+  PayloadAction,
+} from "@laserware/stasis";
 
 import { getIpcRenderer, IpcChannel } from "./common";
 
-interface ForwardedAction extends Action {
+type AnyAction<P = any> = UnknownAction | PayloadAction<P>;
+
+type ForwardedAction<P = any> = AnyAction<P> & {
   meta?: { wasAlreadyForwarded: boolean };
-}
+};
 
 /**
  * Function that returns the forwarding middleware.
@@ -28,8 +34,8 @@ export type CreateForwardingMiddlewareFunction = (
  * @property [afterSend] Callback fired after the action is sent to the other process.
  */
 type ForwardToMiddlewareOptions = {
-  beforeSend?<A = any>(action: A): A;
-  afterSend?<A = any>(action: A): A;
+  beforeSend?: <P = any>(action: ForwardedAction<P>) => ForwardedAction<P>;
+  afterSend?: <P = any>(action: ForwardedAction<P>) => ForwardedAction<P>;
 };
 
 // Used as a fallback for undefined hooks.
