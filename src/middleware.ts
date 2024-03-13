@@ -16,12 +16,6 @@ export type CreateForwardingMiddlewareFunction = (
 ) => Middleware;
 
 /**
- * Hook callback that enables changes to the action before or after sending to
- * the other process.
- */
-type ForwardToMiddlewareHook = <A extends ForwardedAction>(action: A) => A;
-
-/**
  * Hooks that run before and after the action is sent to the other process.
  * This is useful for doing things like ensuring the payload is serialized
  * prior to sending the action, or making a change to the action after it's
@@ -34,12 +28,12 @@ type ForwardToMiddlewareHook = <A extends ForwardedAction>(action: A) => A;
  * @property [afterSend] Callback fired after the action is sent to the other process.
  */
 type ForwardToMiddlewareOptions = {
-  beforeSend?: ForwardToMiddlewareHook;
-  afterSend?: ForwardToMiddlewareHook;
+  beforeSend?<A = any>(action: A): A;
+  afterSend?<A = any>(action: A): A;
 };
 
 // Used as a fallback for undefined hooks.
-const noop = <A extends ForwardedAction>(action: A): A => action;
+const noop = <A = any>(action: A): A => action;
 
 /**
  * Whenever an action is fired from the "main" process, forward it to the
