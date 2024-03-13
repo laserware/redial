@@ -1,15 +1,17 @@
-import type { Middleware, Store } from "@laserware/stasis";
+import type { Store } from "@laserware/stasis";
 
 import type { ProcessName } from "./common";
 import {
   createForwardToRendererMiddleware,
   createForwardToMainMiddleware,
+  type CreateForwardingMiddlewareFunction,
 } from "./middleware";
 import { replayActionInMain, replayActionInRenderer } from "./replay";
 import { requestStateFromMain, listenForStateRequests } from "./syncState";
 
 /**
  * Initializer callback used in the withRedial function.
+ *
  * @callback WithRedialInitializer
  * @param createForwardingMiddleware
  *    Creates the forwarding middleware that forwards dispatched actions to the opposing process.
@@ -21,7 +23,7 @@ import { requestStateFromMain, listenForStateRequests } from "./syncState";
  *    process to get the current Redux state in the "renderer" process.
  */
 type WithRedialInitializer<State> = (
-  createForwardingMiddleware: () => Middleware,
+  createForwardingMiddleware: CreateForwardingMiddlewareFunction,
   replayAction: (store: Store<State>) => void,
   synchronize: (store: Store<State>) => void,
 ) => Store<State>;

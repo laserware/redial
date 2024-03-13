@@ -11,7 +11,9 @@ import { getIpcMain, getIpcRenderer, IpcChannel } from "./common";
 /**
  * Listens for actions that were dispatched from the "renderer" process and
  * dispatches the action in the "main" process to keep the store in sync.
+ *
  * @template State Type definition for Redux state.
+ *
  * @param store Redux store for the current process.
  */
 export function replayActionInMain<State>(store: Store<State>): void {
@@ -23,7 +25,9 @@ export function replayActionInMain<State>(store: Store<State>): void {
 /**
  * Listens for actions that were dispatched from the "main" process and
  * dispatches the action in the "renderer" process to keep the store in sync.
+ *
  * @template State Type definition for Redux state.
+ *
  * @param store Redux store for the current process.
  */
 export function replayActionInRenderer<State>(store: Store<State>): void {

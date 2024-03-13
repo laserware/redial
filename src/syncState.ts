@@ -7,7 +7,9 @@ import { getIpcMain, getIpcRenderer, IpcChannel } from "./common";
  * Adds an IPC listener that allows the "renderer" process to get the current
  * state when configuring the store. This is so state is persisted between
  * window reloads.
+ *
  * @template State Type definition for Redux state.
+ *
  * @param store Redux store for the current process.
  */
 export async function listenForStateRequests<State>(
@@ -36,7 +38,9 @@ export async function listenForStateRequests<State>(
  * the state is returned from the "main" process. You should only use this function
  * in development to ensure state doesn't fall out of sync due to HMR or
  * browser refresh.
+ *
  * @template State Type definition for Redux state.
+ *
  * @param store Redux store for the current process.
  */
 export function requestStateFromMain<State>(store: Store<State>): State {

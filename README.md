@@ -1,5 +1,8 @@
 # @laserware/redial
 
-Redux middleware layer over Electron IPC.
+`RED`ux `I`PC `A`bstraction `L`ayer.
 
+## Prerequisites
 
+- Node.js >= v20
+- TypeScript >=
