@@ -54,13 +54,9 @@ export function createForwardToRendererMiddleware(
   const afterSend = options?.afterSend ?? noop;
 
   return () => (next) => (action) => {
-    if (!isValidAction(action)) {
-      return next(action);
-    }
-
     let forwardedAction = action as ForwardedAction;
 
-    if (wasActionAlreadyForwarded(forwardedAction)) {
+    if (forwardedAction.meta?.wasAlreadyForwarded ?? false) {
       return next(action);
     }
 
@@ -101,59 +97,30 @@ export function createForwardToMainMiddleware(
   const afterSend = hooks?.afterSend ?? noop;
 
   return () => (next) => (action) => {
-    if (!isValidAction(action)) {
-      return next(action);
-    }
-
     let forwardedAction = action as ForwardedAction;
 
-    const wasAlreadyForwarded = wasActionAlreadyForwarded(forwardedAction);
-    if (wasAlreadyForwarded) {
+    // @ts-ignore
+    if (forwardedAction.type?.startsWith("@@")) {
       return next(action);
     }
 
-    // Actions with a double `@@` prefix usually indicate that it's
-    // coming from (another) third-party:
-    if (/^@@/.test(forwardedAction.type)) {
-      return next(action);
+    const wasAlreadyForwarded =
+      forwardedAction.meta?.wasAlreadyForwarded ?? false;
+
+    const shouldBeForwarded = !wasAlreadyForwarded;
+
+    if (shouldBeForwarded) {
+      forwardedAction = beforeSend(forwardedAction);
+
+      ipcRenderer.send(IpcChannel.ForMiddleware, forwardedAction);
+
+      // No reason to reassign `forwardedAction` here as this is the end of the
+      // line. But it could be useful for logging or introspection:
+      afterSend(forwardedAction);
+
+      return undefined;
     }
 
-    forwardedAction = beforeSend(forwardedAction);
-
-    ipcRenderer.send(IpcChannel.ForMiddleware, forwardedAction);
-
-    // No reason to reassign `forwardedAction` here as this is the end of the
-    // line. But it could be useful for logging or introspection:
-    afterSend(forwardedAction);
+    return next(action);
   };
-}
-
-/**
- * Returns true if the specified action has already been forwarded to the
- * opposing process.
- *
- * @param action Action to check for meta indicating action already forwarded.
- */
-function wasActionAlreadyForwarded(action: unknown): boolean {
-  const forwardedAction = action as ForwardedAction;
-
-  // If the action was already forwarded, don't send an IPC message. If we
-  // _don't_ do this, we get stuck in an infinite game of ping-pong.
-  return forwardedAction.meta?.wasAlreadyForwarded ?? false;
-}
-
-/**
- * Returns true if the specified action (from middleware) is actually a valid
- * action.
- */
-function isValidAction(action: unknown): boolean {
-  if (typeof action !== "object" || action === null) {
-    return false;
-  }
-
-  if (Array.isArray(action)) {
-    return false;
-  }
-
-  return "type" in action;
 }
