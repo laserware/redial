@@ -6,7 +6,7 @@ import type {
   IpcRendererEvent,
 } from "electron";
 
-import { getIpcMain, getIpcRenderer, IpcChannel } from "./common";
+import { getIpcMain, getIpcRenderer, IpcChannel } from "./common.js";
 
 /**
  * Listens for actions that were dispatched from the "renderer" process and

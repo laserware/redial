@@ -1,7 +1,7 @@
 import type { Store } from "@laserware/stasis";
 import type { IpcMainEvent } from "electron";
 
-import { getIpcMain, getIpcRenderer, IpcChannel } from "./common";
+import { getIpcMain, getIpcRenderer, IpcChannel } from "./common.js";
 
 /**
  * Adds an IPC listener that allows the "renderer" process to get the current

@@ -1,5 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.json",
-  "exclude": ["dist", "node_modules", "src/**/__mocks__/*", "src/**/*.test.ts"]
+  "exclude": [
+    "dist",
+    "node_modules",
+    "./src/**/__mocks__/*",
+    "./src/**/*.test.ts"
+  ]
 }

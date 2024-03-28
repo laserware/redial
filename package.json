@@ -35,24 +35,23 @@
     "typecheck": "tsc --noEmit",
     "prettier": "prettier --cache --write src",
     "prettier:ci": "prettier --check src",
-    "eslint": "eslint --cache src",
+    "eslint": "eslint --cache src tsup.config.ts",
     "vitest": "vitest"
   },
-  "dependencies": {
-    "@laserware/stasis": "^3.0.2"
-  },
   "devDependencies": {
-    "@laserware/eslint-config": "^2.0.0",
-    "@rushstack/eslint-patch": "^1.7.2",
-    "electron": "^29.1.0",
+    "@laserware/eslint-config": "^2.2.2",
+    "@laserware/stasis": "^3.0.2",
+    "@rushstack/eslint-patch": "^1.9.0",
+    "electron": "^29.1.6",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
     "tslib": "^2.6.2",
     "tsup": "^8.0.2",
-    "typescript": "^5.4.2",
-    "vitest": "^1.3.1"
+    "typescript": "^5.4.3",
+    "vitest": "^1.4.0"
   },
   "peerDependencies": {
+    "@laserware/stasis": ">=3",
     "electron": "*",
     "typescript": ">=5"
   },

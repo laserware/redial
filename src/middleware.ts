@@ -4,7 +4,7 @@ import type {
   PayloadAction,
 } from "@laserware/stasis";
 
-import { getIpcRenderer, IpcChannel } from "./common";
+import { getIpcRenderer, IpcChannel } from "./common.js";
 
 type AnyAction<P = any> = UnknownAction | PayloadAction<P>;
 

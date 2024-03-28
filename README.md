@@ -5,4 +5,4 @@
 ## Prerequisites
 
 - Node.js >= v20
-- TypeScript >=
+- TypeScript >= 5

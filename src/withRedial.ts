@@ -1,13 +1,13 @@
 import type { Store } from "@laserware/stasis";
 
-import type { ProcessName } from "./common";
+import type { ProcessName } from "./common.js";
 import {
   createForwardToRendererMiddleware,
   createForwardToMainMiddleware,
   type CreateForwardingMiddlewareFunction,
-} from "./middleware";
-import { replayActionInMain, replayActionInRenderer } from "./replay";
-import { requestStateFromMain, listenForStateRequests } from "./syncState";
+} from "./middleware.js";
+import { replayActionInMain, replayActionInRenderer } from "./replay.js";
+import { requestStateFromMain, listenForStateRequests } from "./syncState.js";
 
 /**
  * Initializer callback used in the withRedial function.
@@ -49,8 +49,8 @@ type WithRedialInitializer<State> = (
  * function createStore() {
  *   return withRedial(
  *     "main",
- *     (createForwardToMainMiddleware, replayAction, listenForStateRequests) => {
- *       const forwardToRendererMiddleware = createForwardingMiddleware();
+ *     (createForwardToRendererMiddleware, replayAction, listenForStateRequests) => {
+ *       const forwardToRendererMiddleware = createForwardToRendererMiddleware();
  *
  *       const store = configureStore({
  *         reducer: rootReducer,
