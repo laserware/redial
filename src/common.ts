@@ -22,6 +22,7 @@ export function getIpcMain(): IpcMain {
 /**
  * Tries to find the `ipcRenderer` in the global scope (or via import), and
  * returns it. If this is called from the main process, an error is thrown.
+ * @todo Allow user to specify their own IPC implementation (for context bridge).
  */
 export function getIpcRenderer(): IpcRenderer {
   if (getProcessScope() === "main") {

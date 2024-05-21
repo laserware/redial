@@ -13,14 +13,13 @@ import { requestStateFromMain, listenForStateRequests } from "./syncState.js";
  * Initializer callback used in the withRedial function.
  *
  * @callback WithRedialInitializer
- * @param createForwardingMiddleware
- *    Creates the forwarding middleware that forwards dispatched actions to the opposing process.
- * @param replayAction
- *    Replays the dispatched action from the opposing process in the current process.
- * @param synchronize
- *    Adds a listener to send Redux state from the main process to the "renderer" process
- *    when requested in the "main" process, or sends a synchronous request to the "main"
- *    process to get the current Redux state in the "renderer" process.
+ * @param createForwardingMiddleware Creates the forwarding middleware that forwards
+ *     dispatched actions to the opposing process.
+ * @param replayAction Replays the dispatched action from the opposing process in the
+ *     current process.
+ * @param synchronize Adds a listener to send Redux state from the main process to the
+ *    "renderer" process when requested in the "main" process, or sends a synchronous
+ *    request to the "main" process to get the current Redux state in the "renderer" process.
  */
 type WithRedialInitializer<State> = (
   createForwardingMiddleware: CreateForwardingMiddlewareFunction,
