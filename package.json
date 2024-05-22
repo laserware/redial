@@ -1,6 +1,6 @@
 {
   "name": "@laserware/redial",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Redux IPC abstraction layer.",
   "type": "module",
   "main": "dist/index.cjs",
