@@ -31,8 +31,8 @@ export async function listenForStateRequests<State>(
 }
 
 /**
- * Returns the state from the "main" process. If the state wasn't found, falls
- * back to store.getState() (from the specified store).
+ * Returns the state from the "main" process. If the state wasn't found, returns
+ * undefined.
  *
  * Important! This is a synchronous function, so it blocks the main thread until
  * the state is returned from the "main" process. You should only use this function
@@ -40,16 +40,9 @@ export async function listenForStateRequests<State>(
  * browser refresh.
  *
  * @template State Type definition for Redux state.
- *
- * @param store Redux store for the current process.
  */
-export function requestStateFromMain<State>(store: Store<State>): State {
+export function requestStateFromMain<State>(): State | undefined {
   const ipcRenderer = getIpcRenderer();
 
-  const stateFromMain = ipcRenderer.sendSync(IpcChannel.ForStateSync);
-  if (stateFromMain) {
-    return stateFromMain;
-  } else {
-    return store.getState();
-  }
+  return ipcRenderer.sendSync(IpcChannel.ForStateSync);
 }
