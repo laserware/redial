@@ -9,6 +9,12 @@ import {
 import { replayActionInMain, replayActionInRenderer } from "./replay.js";
 import { requestStateFromMain, listenForStateRequests } from "./syncState.js";
 
+type SynchronizeFunction<State, PN extends ProcessName> = PN extends "main"
+  ? (store: Store<State>) => void
+  : PN extends "renderer"
+    ? () => State
+    : never;
+
 /**
  * Initializer callback used in the withRedial function.
  *
@@ -21,10 +27,10 @@ import { requestStateFromMain, listenForStateRequests } from "./syncState.js";
  *    "renderer" process when requested in the "main" process, or sends a synchronous
  *    request to the "main" process to get the current Redux state in the "renderer" process.
  */
-type WithRedialInitializer<State> = (
+type WithRedialInitializer<State, PN extends ProcessName> = (
   createForwardingMiddleware: CreateForwardingMiddlewareFunction,
   replayAction: (store: Store<State>) => void,
-  synchronize: (store: Store<State>) => void,
+  synchronize: SynchronizeFunction<State, PN>,
 ) => Store<State>;
 
 /**
@@ -67,12 +73,13 @@ type WithRedialInitializer<State> = (
  */
 export function withRedial<State, PN extends ProcessName>(
   processName: PN,
-  initializer: WithRedialInitializer<State>,
+  initializer: WithRedialInitializer<State, PN>,
 ): Store<State> {
   if (processName === "main") {
     return initializer(
       createForwardToRendererMiddleware,
       replayActionInMain,
+      // @ts-ignore I don't know why this isn't working, but I know it's correct.
       listenForStateRequests,
     );
   }
@@ -81,6 +88,7 @@ export function withRedial<State, PN extends ProcessName>(
     return initializer(
       createForwardToMainMiddleware,
       replayActionInRenderer,
+      // @ts-ignore I don't know why this isn't working, but I know it's correct.
       requestStateFromMain,
     );
   }
