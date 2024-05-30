@@ -57,3 +57,4 @@ dist
 .yarn/*
 yarn.lock
 .pnp.*
+.idea

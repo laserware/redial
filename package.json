@@ -43,9 +43,9 @@
     "vitest": "vitest"
   },
   "devDependencies": {
-    "@laserware/eslint-config": "^3.0.1",
-    "@laserware/stasis": "^3.0.2",
-    "electron": "^30.0.6",
+    "@laserware/eslint-config": "^3.1.1",
+    "@laserware/stasis": "^3.1.0",
+    "electron": "^30.0.9",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
     "tslib": "^2.6.2",
