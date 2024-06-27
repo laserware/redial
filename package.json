@@ -43,14 +43,14 @@
     "vitest": "vitest"
   },
   "devDependencies": {
-    "@laserware/eslint-config": "^3.1.1",
-    "@laserware/stasis": "^3.1.0",
-    "electron": "^30.0.9",
-    "eslint": "^8.57.0",
-    "prettier": "^3.2.5",
-    "tslib": "^2.6.2",
-    "tsup": "^8.0.2",
-    "typescript": "^5.4.5",
+    "@laserware/eslint-config": "^3.2.0",
+    "@laserware/stasis": "^3.2.0",
+    "electron": "^31.1.0",
+    "eslint": "8.57.0",
+    "prettier": "^3.3.2",
+    "tslib": "^2.6.3",
+    "tsup": "^8.1.0",
+    "typescript": "^5.5.2",
     "vitest": "^1.6.0"
   },
   "peerDependencies": {
