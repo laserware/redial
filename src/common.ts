@@ -29,16 +29,16 @@ export function getIpcRenderer(): IpcRenderer {
     throw new Error("ipcRenderer is not available in the main process");
   }
 
-  if (globalThis.require) {
-    const electron = globalThis.require("electron");
-    if (electron) {
+  if ("require" in globalThis) {
+    const electron = globalThis.require("electron") ?? null;
+    if (electron !== null) {
       return electron.ipcRenderer;
     }
   }
 
-  if (typeof window !== "undefined" && window.require) {
-    const electron = window.require("electron");
-    if (electron) {
+  if (typeof window !== "undefined" && "require" in window) {
+    const electron = window.require("electron") ?? null;
+    if (electron !== null) {
       return electron.ipcRenderer;
     }
   }

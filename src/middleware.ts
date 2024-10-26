@@ -1,7 +1,7 @@
 import type {
   Middleware,
-  UnknownAction,
   PayloadAction,
+  UnknownAction,
 } from "@laserware/stasis";
 
 import { getIpcRenderer, IpcChannel } from "./common.js";

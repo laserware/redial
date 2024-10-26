@@ -2,21 +2,24 @@ import type { Store } from "@laserware/stasis";
 
 import type { ProcessName } from "./common.js";
 import {
-  createForwardToRendererMiddleware,
   createForwardToMainMiddleware,
+  createForwardToRendererMiddleware,
   type CreateForwardingMiddlewareFunction,
 } from "./middleware.js";
 import { replayActionInMain, replayActionInRenderer } from "./replay.js";
-import { requestStateFromMain, listenForStateRequests } from "./syncState.js";
+import { listenForStateRequests, requestStateFromMain } from "./syncState.js";
 
-type SynchronizeFunction<State, PN extends ProcessName> = PN extends "main"
-  ? (store: Store<State>) => void
+type SynchronizeFunction<S, PN extends ProcessName> = PN extends "main"
+  ? (store: Store<S>) => void
   : PN extends "renderer"
-    ? () => State
+    ? () => S
     : never;
 
 /**
  * Initializer callback used in the withRedial function.
+ *
+ * @template State Type definition for Redux state.
+ * @template PN Process name in which to create store ("main" or "renderer").
  *
  * @callback WithRedialInitializer
  * @param createForwardingMiddleware Creates the forwarding middleware that forwards
@@ -27,11 +30,11 @@ type SynchronizeFunction<State, PN extends ProcessName> = PN extends "main"
  *    "renderer" process when requested in the "main" process, or sends a synchronous
  *    request to the "main" process to get the current Redux state in the "renderer" process.
  */
-type WithRedialInitializer<State, PN extends ProcessName> = (
+type WithRedialInitializer<S, PN extends ProcessName> = (
   createForwardingMiddleware: CreateForwardingMiddlewareFunction,
-  replayAction: (store: Store<State>) => void,
-  synchronize: SynchronizeFunction<State, PN>,
-) => Store<State>;
+  replayAction: (store: Store<S>) => void,
+  synchronize: SynchronizeFunction<S, PN>,
+) => Store<S>;
 
 /**
  * Convenience wrapper to provide the APIs for Electron IPC middleware when
@@ -39,7 +42,7 @@ type WithRedialInitializer<State, PN extends ProcessName> = (
  *
  * Note that you _must_ return the Redux store from the initializer callback.
  *
- * @template State Type definition for Redux state.
+ * @template S Type definition for Redux state.
  * @template PN Process name in which to create store ("main" or "renderer").
  *
  * @param processName Process name in which to create store ("main" or "renderer").
@@ -71,10 +74,10 @@ type WithRedialInitializer<State, PN extends ProcessName> = (
  *   );
  * }
  */
-export function withRedial<State, PN extends ProcessName>(
+export function withRedial<S, PN extends ProcessName>(
   processName: PN,
-  initializer: WithRedialInitializer<State, PN>,
-): Store<State> {
+  initializer: WithRedialInitializer<S, PN>,
+): Store<S> {
   if (processName === "main") {
     return initializer(
       createForwardToRendererMiddleware,

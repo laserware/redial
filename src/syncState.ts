@@ -8,12 +8,12 @@ import { getIpcMain, getIpcRenderer, IpcChannel } from "./common.js";
  * state when configuring the store. This is so state is persisted between
  * window reloads.
  *
- * @template State Type definition for Redux state.
+ * @template S Type definition for Redux state.
  *
  * @param store Redux store for the current process.
  */
-export async function listenForStateRequests<State>(
-  store: Store<State>,
+export async function listenForStateRequests<S>(
+  store: Store<S>,
 ): Promise<void> {
   const ipcMain = getIpcMain();
 
@@ -39,9 +39,9 @@ export async function listenForStateRequests<State>(
  * in development to ensure state doesn't fall out of sync due to HMR or
  * browser refresh.
  *
- * @template State Type definition for Redux state.
+ * @template S Type definition for Redux state.
  */
-export function requestStateFromMain<State>(): State | undefined {
+export function requestStateFromMain<S>(): S | undefined {
   const ipcRenderer = getIpcRenderer();
 
   return ipcRenderer.sendSync(IpcChannel.ForStateSync);
