@@ -1,8 +1,8 @@
 # @laserware/redial
 
-`RED`ux `I`PC `A`bstraction `L`ayer.
+Redux IPC abstraction layer.
 
 ## Prerequisites
 
-- Node.js >= v20
+- Node.js >= v22
 - TypeScript >= 5

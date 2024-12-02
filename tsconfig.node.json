@@ -4,5 +4,5 @@
     "composite": true,
     "strictNullChecks": true
   },
-  "include": ["./tsup.config.ts"]
+  "include": ["./tsup.config.ts", "./vitest.config.ts"]
 }

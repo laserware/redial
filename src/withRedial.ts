@@ -8,45 +8,96 @@ import {
 } from "./middleware.js";
 import { replayActionInMain, replayActionInRenderer } from "./replay.js";
 import { listenForStateRequests, requestStateFromMain } from "./syncState.js";
-
-type SynchronizeFunction<S, PN extends ProcessName> = PN extends "main"
-  ? (store: Store<S>) => void
-  : PN extends "renderer"
-    ? () => S
-    : never;
+import type { AnyState } from "./types.js";
 
 /**
- * Initializer callback used in the withRedial function.
+ * Object available as the argument in the {@linkcode withRedial} initializer
+ * function in the <i>main</i> process.
  *
- * @template State Type definition for Redux state.
- * @template PN Process name in which to create store ("main" or "renderer").
- *
- * @callback WithRedialInitializer
- * @param createForwardingMiddleware Creates the forwarding middleware that forwards
- *     dispatched actions to the opposing process.
- * @param replayAction Replays the dispatched action from the opposing process in the
- *     current process.
- * @param synchronize Adds a listener to send Redux state from the main process to the
- *    "renderer" process when requested in the "main" process, or sends a synchronous
- *    request to the "main" process to get the current Redux state in the "renderer" process.
+ * @template S Type definition for Redux state.
  */
-type WithRedialInitializer<S, PN extends ProcessName> = (
-  createForwardingMiddleware: CreateForwardingMiddlewareFunction,
-  replayAction: (store: Store<S>) => void,
-  synchronize: SynchronizeFunction<S, PN>,
-) => Store<S>;
+export type RedialMainInit<S> = {
+  /**
+   * Creates the forwarding middleware that forwards dispatched actions to the
+   * <i>renderer</i> process.
+   */
+  createForwardingMiddleware: CreateForwardingMiddlewareFunction;
+
+  /**
+   * Replays the dispatched action from the <i>renderer</i> process in the
+   * <i>main</i> process.
+   *
+   * @param store Redux store instance.
+   */
+  replayAction: (store: Store<S>) => void;
+
+  /**
+   * Synchronously sends the current state to the <i>renderer</i> process when
+   * requested via {@linkcode RedialRendererInit.requestState}. This is
+   * useful for preserving state between reloads in the <i>renderer</i> process.
+   *
+   * @param store Redux store instance.
+   */
+  listenForStateRequests: (store: Store<S>) => void;
+};
+
+/**
+ * Object available as the argument in the {@linkcode withRedial} initializer
+ * function in the <i>renderer</i> process.
+ *
+ * @template S Type definition for Redux state.
+ */
+export type RedialRendererInit<S> = {
+  /**
+   * Creates the forwarding middleware that forwards dispatched actions to the
+   * <i>main</i> process.
+   */
+  createForwardingMiddleware: CreateForwardingMiddlewareFunction;
+
+  /**
+   * Replays the dispatched action from the <i>main</i> process in the
+   * <i>renderer</i> process.
+   *
+   * @param store Redux store instance.
+   */
+  replayAction: (store: Store<S>) => void;
+
+  /**
+   * Synchronously request state from the <i>main</i> process.
+   *
+   * **Important Note**
+   *
+   * This will block the main thread until the state is returned from the
+   * <i>main</i> process. You should only use this in development to keep state
+   * synchronized between reloads of the renderer process.
+   */
+  requestState: () => S | undefined;
+};
+
+/**
+ * Init options for the {@linkcode withRedial} initializer function based on
+ * the {@linkcode ProcessName}.
+ */
+export type RedialInit<
+  S extends AnyState,
+  PN extends ProcessName,
+> = PN extends "main"
+  ? RedialMainInit<S>
+  : PN extends "renderer"
+    ? RedialRendererInit<S>
+    : never;
 
 /**
  * Convenience wrapper to provide the APIs for Electron IPC middleware when
  * configuring the Redux store.
  *
- * Note that you _must_ return the Redux store from the initializer callback.
+ * Note that you _must_ return the Redux store from the `initializer` callback.
  *
  * @template S Type definition for Redux state.
- * @template PN Process name in which to create store ("main" or "renderer").
+ * @template PN Process name in which to create store.
  *
- * @param processName Process name in which to create store ("main" or "renderer").
- * @param initializer Callback with Electron IPC middleware APIs as the options argument.
+ * @param processName Process name in which to create store (`"main"` or `"renderer"`).
+ * @param initializer Callback with Electron IPC middleware APIs as the `options` argument.
  *
  * @example
  * import { configureStore } from "@reduxjs/toolkit";
@@ -74,26 +125,30 @@ type WithRedialInitializer<S, PN extends ProcessName> = (
  *   );
  * }
  */
-export function withRedial<S, PN extends ProcessName>(
+export function withRedial<S extends AnyState, PN extends ProcessName>(
   processName: PN,
-  initializer: WithRedialInitializer<S, PN>,
+  initializer: (init: RedialInit<S, PN>) => Store<S>,
 ): Store<S> {
   if (processName === "main") {
-    return initializer(
-      createForwardToRendererMiddleware,
-      replayActionInMain,
-      // @ts-ignore I don't know why this isn't working, but I know it's correct.
+    const options: RedialMainInit<S> = {
+      createForwardingMiddleware: createForwardToRendererMiddleware,
+      replayAction: replayActionInMain,
       listenForStateRequests,
-    );
+    };
+
+    // @ts-ignore Don't know why this is failing, but it's valid.
+    return initializer(options);
   }
 
   if (processName === "renderer") {
-    return initializer(
-      createForwardToMainMiddleware,
-      replayActionInRenderer,
-      // @ts-ignore I don't know why this isn't working, but I know it's correct.
-      requestStateFromMain,
-    );
+    const options: RedialRendererInit<S> = {
+      createForwardingMiddleware: createForwardToMainMiddleware,
+      replayAction: replayActionInRenderer,
+      requestState: requestStateFromMain,
+    };
+
+    // @ts-ignore Don't know why this is failing, but it's valid.
+    return initializer(options);
   }
 
   // prettier-ignore

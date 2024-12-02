@@ -50,6 +50,7 @@ node_modules/
 .env.local
 
 dist
+site
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test

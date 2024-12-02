@@ -1,0 +1,32 @@
+{
+  "cleanOutputDir": true,
+  "customCss": "./docs/theme.css",
+  "entryPoints": ["./src/index.ts"],
+  "exclude": ["**/**test.ts"],
+  "excludeInternal": true,
+  "excludeNotDocumented": true,
+  "externalSymbolLinkMappings": {
+    "redux": {
+      "Middleware": "https://redux.js.org/api/applymiddleware#overview",
+      "State": "https://redux.js.org/tutorials/essentials/part-1-overview-concepts#state-management",
+      "Store": "https://redux.js.org/api/store",
+      "UnknownAction": "https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow#actions"
+    },
+    "@reduxjs/toolkit": {
+      "PayloadAction": "https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow#actions"
+    }
+  },
+  "headings": { "readme": false, "document": false },
+  "hideGenerator": true,
+  "navigation": {
+    "compactFolders": true,
+    "excludeReferences": true,
+    "includeCategories": true,
+    "includeFolders": true,
+    "includeGroups": false
+  },
+  "markdownLinkExternal": true,
+  "navigationLinks": { "GitHub": "https://github.com/laserware/sword" },
+  "out": "site",
+  "readme": "./README.md"
+}

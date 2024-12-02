@@ -1,14 +1,15 @@
-import type {
-  Middleware,
-  PayloadAction,
-  UnknownAction,
-} from "@laserware/stasis";
+import type { Middleware } from "@laserware/stasis";
 
 import { getIpcRenderer, IpcChannel } from "./common.js";
+import type { AnyAction } from "./types.js";
 
-type AnyAction<P = any> = UnknownAction | PayloadAction<P>;
-
-type ForwardedAction<P = any> = AnyAction<P> & {
+/**
+ * Redux action with additional metadata to indicate if the action was already
+ * forwarded from the other process.
+ *
+ * @template P Payload of the forwarded action.
+ */
+export type ForwardedAction<P = any> = AnyAction<P> & {
   meta?: { wasAlreadyForwarded: boolean };
 };
 
@@ -22,28 +23,42 @@ export type CreateForwardingMiddlewareFunction = (
 ) => Middleware;
 
 /**
- * Hooks that run before and after the action is sent to the other process.
+ * Hooks that run before and after the action is sent from one process to another.
  * This is useful for doing things like ensuring the payload is serialized
  * prior to sending the action, or making a change to the action after it's
- * sent to the renderer process.
+ * sent to the <i>renderer</i> process.
  *
- * Note that the afterSend hook has no effect after sending the action to the main
+ * Note that the `afterSend` hook has no effect after sending the action to the <i>main</i>
  * process, as `next` isn't called, but it could be useful for logging purposes.
- *
- * @property [beforeSend] Callback fired before the action is sent to the other process.
- * @property [afterSend] Callback fired after the action is sent to the other process.
  */
-type ForwardToMiddlewareOptions = {
-  beforeSend?: <P = any>(action: ForwardedAction<P>) => ForwardedAction<P>;
-  afterSend?: <P = any>(action: ForwardedAction<P>) => ForwardedAction<P>;
+export type ForwardToMiddlewareOptions = {
+  /**
+   * Callback fired before the action is sent to the other process.
+   *
+   * @template P Payload of the forwarded action.
+   *
+   * @param action Action prior to forwarding.
+   */
+  beforeSend?<P = any>(action: ForwardedAction<P>): ForwardedAction<P>;
+
+  /**
+   * Callback fired after the action is sent to the other process.
+   *
+   * @template P Payload of the forwarded action.
+   *
+   * @param action Action after forwarding.
+   */
+  afterSend?<P = any>(action: ForwardedAction<P>): ForwardedAction<P>;
 };
 
 // Used as a fallback for undefined hooks.
 const noop = <A = any>(action: A): A => action;
 
 /**
- * Whenever an action is fired from the "main" process, forward it to the
- * "renderer" process to ensure global state is in sync.
+ * Whenever an action is fired from the <i>main</i> process, forward it to the
+ * <i>renderer</i> process to ensure global state is in sync.
+ *
+ * @internal
  */
 export function createForwardToRendererMiddleware(
   options?: ForwardToMiddlewareOptions,
@@ -85,8 +100,10 @@ export function createForwardToRendererMiddleware(
 }
 
 /**
- * Whenever an action is fired from the "renderer" process, forward it to the
- * "main" process to ensure global state is in sync.
+ * Whenever an action is fired from the <i>renderer</i> process, forward it to the
+ * <i>main</i> process to ensure global state is in sync.
+ *
+ * @internal
  */
 export function createForwardToMainMiddleware(
   hooks?: ForwardToMiddlewareOptions,

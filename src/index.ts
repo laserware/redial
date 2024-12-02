@@ -1,7 +1,13 @@
-export {
-  createForwardToMainMiddleware,
-  createForwardToRendererMiddleware,
+export type { ProcessName } from "./common.js";
+export type {
+  CreateForwardingMiddlewareFunction,
+  ForwardedAction,
+  ForwardToMiddlewareOptions,
 } from "./middleware.js";
-export { replayActionInMain, replayActionInRenderer } from "./replay.js";
-export { listenForStateRequests, requestStateFromMain } from "./syncState.js";
-export { withRedial } from "./withRedial.js";
+export {
+  withRedial,
+  type RedialInit,
+  type RedialMainInit,
+  type RedialRendererInit,
+} from "./withRedial.js";
+export type { AnyAction, AnyState } from "./types.js";

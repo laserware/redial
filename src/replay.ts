@@ -9,8 +9,10 @@ import type {
 import { getIpcMain, getIpcRenderer, IpcChannel } from "./common.js";
 
 /**
- * Listens for actions that were dispatched from the "renderer" process and
- * dispatches the action in the "main" process to keep the store in sync.
+ * Listens for actions that were dispatched from the <i>renderer</i> process and
+ * dispatches the action in the <i>main</i> process to keep the store in sync.
+ *
+ * @internal
  *
  * @template S Type definition for Redux state.
  *
@@ -23,8 +25,10 @@ export function replayActionInMain<S>(store: Store<S>): void {
 }
 
 /**
- * Listens for actions that were dispatched from the "main" process and
- * dispatches the action in the "renderer" process to keep the store in sync.
+ * Listens for actions that were dispatched from the <i>main</i> process and
+ * dispatches the action in the <i>renderer</i> process to keep the store in sync.
+ *
+ * @internal
  *
  * @template S Type definition for Redux state.
  *

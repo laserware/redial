@@ -4,9 +4,11 @@ import type { IpcMainEvent } from "electron";
 import { getIpcMain, getIpcRenderer, IpcChannel } from "./common.js";
 
 /**
- * Adds an IPC listener that allows the "renderer" process to get the current
+ * Adds an IPC listener that allows the <i>renderer</i> process to get the current
  * state when configuring the store. This is so state is persisted between
  * window reloads.
+ *
+ * @internal
  *
  * @template S Type definition for Redux state.
  *
@@ -31,13 +33,15 @@ export async function listenForStateRequests<S>(
 }
 
 /**
- * Returns the state from the "main" process. If the state wasn't found, returns
+ * Returns the state from the <i>main</i> process. If the state wasn't found, returns
  * undefined.
  *
  * Important! This is a synchronous function, so it blocks the main thread until
- * the state is returned from the "main" process. You should only use this function
+ * the state is returned from the <i>main</i> process. You should only use this function
  * in development to ensure state doesn't fall out of sync due to HMR or
  * browser refresh.
+ *
+ * @internal
  *
  * @template S Type definition for Redux state.
  */
