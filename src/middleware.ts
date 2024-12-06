@@ -1,7 +1,11 @@
 import type { Middleware } from "@laserware/stasis";
 
-import { getIpcRenderer, IpcChannel } from "./common.js";
-import type { AnyAction } from "./types.js";
+import {
+  IpcChannel,
+  type AnyAction,
+  type ElectronMainApi,
+  type ElectronRendererApi,
+} from "./types.js";
 
 /**
  * Redux action with additional metadata to indicate if the action was already
@@ -60,42 +64,42 @@ const noop = <A = any>(action: A): A => action;
  *
  * @internal
  */
-export function createForwardToRendererMiddleware(
-  options?: ForwardToMiddlewareOptions,
-): Middleware {
-  const { webContents } = require("electron");
+export function getCreateForwardToRendererMiddleware(
+  electronMainApi: ElectronMainApi,
+) {
+  return (options?: ForwardToMiddlewareOptions): Middleware => {
+    const beforeSend = options?.beforeSend ?? noop;
+    const afterSend = options?.afterSend ?? noop;
 
-  const beforeSend = options?.beforeSend ?? noop;
-  const afterSend = options?.afterSend ?? noop;
+    return () => (next) => (action) => {
+      let forwardedAction = action as ForwardedAction;
 
-  return () => (next) => (action) => {
-    let forwardedAction = action as ForwardedAction;
+      if (forwardedAction.meta?.wasAlreadyForwarded ?? false) {
+        return next(action);
+      }
 
-    if (forwardedAction.meta?.wasAlreadyForwarded ?? false) {
+      const existingMeta = forwardedAction.meta ?? {};
+
+      // Add the `wasAlreadyForwarded` boolean to the action `meta` property.
+      // We append it to the existing `meta` (if already present):
+      forwardedAction.meta = {
+        ...existingMeta,
+        wasAlreadyForwarded: true,
+      };
+
+      // We send a message to all BrowserWindow instances to ensure they can
+      // react to state updates.
+      const allWebContents = electronMainApi.getAllWebContents();
+      for (const contentWindow of allWebContents) {
+        forwardedAction = beforeSend(forwardedAction);
+
+        contentWindow.send(IpcChannel.ForMiddleware, forwardedAction);
+
+        forwardedAction = afterSend(forwardedAction);
+      }
+
       return next(action);
-    }
-
-    const existingMeta = forwardedAction.meta ?? {};
-
-    // Add the `wasAlreadyForwarded` boolean to the action `meta` property.
-    // We append it to the existing `meta` (if already present):
-    forwardedAction.meta = {
-      ...existingMeta,
-      wasAlreadyForwarded: true,
     };
-
-    // We send a message to all BrowserWindow instances to ensure they can
-    // react to state updates.
-    const allWebContents = webContents.getAllWebContents();
-    for (const contentWindow of allWebContents) {
-      forwardedAction = beforeSend(forwardedAction);
-
-      contentWindow.send(IpcChannel.ForMiddleware, forwardedAction);
-
-      forwardedAction = afterSend(forwardedAction);
-    }
-
-    return next(action);
   };
 }
 
@@ -105,39 +109,41 @@ export function createForwardToRendererMiddleware(
  *
  * @internal
  */
-export function createForwardToMainMiddleware(
-  hooks?: ForwardToMiddlewareOptions,
-): Middleware {
-  const ipcRenderer = getIpcRenderer();
+export function getCreateForwardToMainMiddleware(
+  electronRendererApi: ElectronRendererApi,
+) {
+  return function createForwardToMainMiddleware(
+    hooks?: ForwardToMiddlewareOptions,
+  ): Middleware {
+    const beforeSend = hooks?.beforeSend ?? noop;
+    const afterSend = hooks?.afterSend ?? noop;
 
-  const beforeSend = hooks?.beforeSend ?? noop;
-  const afterSend = hooks?.afterSend ?? noop;
+    return () => (next) => (action) => {
+      let forwardedAction = action as ForwardedAction;
 
-  return () => (next) => (action) => {
-    let forwardedAction = action as ForwardedAction;
+      // @ts-ignore
+      if (forwardedAction.type?.startsWith("@@")) {
+        return next(action);
+      }
 
-    // @ts-ignore
-    if (forwardedAction.type?.startsWith("@@")) {
+      const wasAlreadyForwarded =
+        forwardedAction.meta?.wasAlreadyForwarded ?? false;
+
+      const shouldBeForwarded = !wasAlreadyForwarded;
+
+      if (shouldBeForwarded) {
+        forwardedAction = beforeSend(forwardedAction);
+
+        electronRendererApi.send(IpcChannel.ForMiddleware, forwardedAction);
+
+        // No reason to reassign `forwardedAction` here as this is the end of the
+        // line. But it could be useful for logging or introspection:
+        afterSend(forwardedAction);
+
+        return undefined;
+      }
+
       return next(action);
-    }
-
-    const wasAlreadyForwarded =
-      forwardedAction.meta?.wasAlreadyForwarded ?? false;
-
-    const shouldBeForwarded = !wasAlreadyForwarded;
-
-    if (shouldBeForwarded) {
-      forwardedAction = beforeSend(forwardedAction);
-
-      ipcRenderer.send(IpcChannel.ForMiddleware, forwardedAction);
-
-      // No reason to reassign `forwardedAction` here as this is the end of the
-      // line. But it could be useful for logging or introspection:
-      afterSend(forwardedAction);
-
-      return undefined;
-    }
-
-    return next(action);
+    };
   };
 }

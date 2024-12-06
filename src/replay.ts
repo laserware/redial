@@ -1,27 +1,22 @@
 import type { PayloadAction, Store } from "@laserware/stasis";
-import type {
-  IpcMain,
-  IpcMainEvent,
-  IpcRenderer,
-  IpcRendererEvent,
-} from "electron";
+import type { IpcMainEvent, IpcRendererEvent } from "electron";
 
-import { getIpcMain, getIpcRenderer, IpcChannel } from "./common.js";
+import {
+  IpcChannel,
+  type ElectronMainApi,
+  type ElectronRendererApi,
+} from "./types.js";
 
 /**
  * Listens for actions that were dispatched from the <i>renderer</i> process and
  * dispatches the action in the <i>main</i> process to keep the store in sync.
  *
  * @internal
- *
- * @template S Type definition for Redux state.
- *
- * @param store Redux store for the current process.
  */
-export function replayActionInMain<S>(store: Store<S>): void {
-  const ipcMain = getIpcMain();
-
-  replayActionInProcessScope(ipcMain, store);
+export function getReplayActionInMain(ipcMain: ElectronMainApi) {
+  return <S>(store: Store<S>): void => {
+    replayActionInProcessScope(ipcMain, store);
+  };
 }
 
 /**
@@ -29,19 +24,15 @@ export function replayActionInMain<S>(store: Store<S>): void {
  * dispatches the action in the <i>renderer</i> process to keep the store in sync.
  *
  * @internal
- *
- * @template S Type definition for Redux state.
- *
- * @param store Redux store for the current process.
  */
-export function replayActionInRenderer<S>(store: Store<S>): void {
-  const ipcRenderer = getIpcRenderer();
-
-  replayActionInProcessScope(ipcRenderer, store);
+export function getReplayActionInRenderer(ipcRenderer: ElectronRendererApi) {
+  return <S>(store: Store<S>): void => {
+    replayActionInProcessScope(ipcRenderer, store);
+  };
 }
 
 function replayActionInProcessScope<S>(
-  ipc: IpcMain | IpcRenderer,
+  ipc: ElectronMainApi | ElectronRendererApi,
   store: Store<S>,
 ): void {
   const handleReduxChannel = <P>(

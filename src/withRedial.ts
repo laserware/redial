@@ -1,14 +1,22 @@
 import type { Store } from "@laserware/stasis";
 
-import type { ProcessName } from "./common.js";
 import {
-  createForwardToMainMiddleware,
-  createForwardToRendererMiddleware,
+  getCreateForwardToMainMiddleware,
+  getCreateForwardToRendererMiddleware,
   type CreateForwardingMiddlewareFunction,
 } from "./middleware.js";
-import { replayActionInMain, replayActionInRenderer } from "./replay.js";
-import { listenForStateRequests, requestStateFromMain } from "./syncState.js";
-import type { AnyState } from "./types.js";
+import { getReplayActionInMain, getReplayActionInRenderer } from "./replay.js";
+import {
+  getListenForStateRequests,
+  getRequestStateFromMain,
+} from "./syncState.js";
+import type {
+  AnyState,
+  ElectronApiIn,
+  ElectronMainApi,
+  ElectronRendererApi,
+  ProcessName,
+} from "./types.js";
 
 /**
  * Object available as the argument in the {@linkcode withRedial} initializer
@@ -69,7 +77,7 @@ export type RedialRendererInit<S> = {
    *
    * This will block the main thread until the state is returned from the
    * <i>main</i> process. You should only use this in development to keep state
-   * synchronized between reloads of the renderer process.
+   * synchronized between reloads of the <i>renderer</i> process.
    */
   requestState: () => S | undefined;
 };
@@ -97,23 +105,38 @@ export type RedialInit<
  * @template PN Process name in which to create store.
  *
  * @param processName Process name in which to create store (`"main"` or `"renderer"`).
+ * @param electronApi Electron API for the process scope.
  * @param initializer Callback with Electron IPC middleware APIs as the `options` argument.
  *
  * @example
- * import { configureStore } from "@reduxjs/toolkit";
+ * **Main Process**
+ *
+ * ```ts
  * import { withRedial } from "@laserware/redial";
+ * import { configureStore } from "@reduxjs/toolkit";
+ * import { ipcMain, webContents } from "electron";
  *
  * import { rootReducer } from "./rootReducer";
  *
  * function createStore() {
  *   return withRedial(
  *     "main",
- *     (createForwardToRendererMiddleware, replayAction, listenForStateRequests) => {
- *       const forwardToRendererMiddleware = createForwardToRendererMiddleware();
+ *     {
+ *       addListener: (...args) => ipcMain.addListener(...args),
+ *       removeListener: (...args) => ipcMain.removeListener(...args),
+ *       getAllWebContents: () => webContents.getAllWebContents(),
+ *     },
+ *     ({
+ *       createForwardingMiddleware,
+ *       replayAction,
+ *       listenForStateRequests,
+ *     }) => {
+ *       const forwardToRendererMiddleware = createForwardingMiddleware();
  *
  *       const store = configureStore({
  *         reducer: rootReducer,
- *         middleware: [forwardToRendererMiddleware],
+ *          middleware: (getDefaultMiddleware) =>
+ *            getDefaultMiddleware().concat(forwardToRendererMiddleware),
  *       });
  *
  *       replayAction(store);
@@ -124,16 +147,72 @@ export type RedialInit<
  *     },
  *   );
  * }
+ * ```
+ *
+ * **Renderer Process**
+ *
+ * ```ts
+ * import { withRedial } from "@laserware/redial";
+ * import { configureStore } from "@reduxjs/toolkit";
+ *
+ * import { rootReducer } from "./rootReducer";
+ *
+ * // Assuming you're not using context isolation:
+ * const ipcRenderer = window.require("electron").ipcRenderer;
+ *
+ * function createStore() {
+ *   return withRedial(
+ *     "renderer",
+ *     {
+ *       addListener: (...args) => ipcRenderer.addListener(...args),
+ *       removeListener: (...args) => ipcRenderer.removeListener(...args),
+ *       send: (...args) => ipcRenderer.send(...args),
+ *       sendSync: (...args) => ipcRenderer.sendSync(...args),
+ *     },
+ *     ({
+ *       createForwardingMiddleware,
+ *       replayAction,
+ *       requestState,
+ *     }) => {
+ *       const forwardToMainMiddleware = createForwardingMiddleware();
+ *
+ *       // Note that this is blocking, so we only do it in development:
+ *       let preloadedState;
+ *
+ *       if (__ENV__ === "development") {
+ *         preloadedState = requestState();
+ *       }
+ *
+ *       const store = configureStore({
+ *         preloadedState,
+ *         reducer: rootReducer,
+ *         middleware: (getDefaultMiddleware) =>
+ *           getDefaultMiddleware().concat(forwardToMainMiddleware),
+ *       });
+ *
+ *       replayAction(store);
+ *
+ *       return store;
+ *     },
+ *   );
+ * }
+ * ```
  */
-export function withRedial<S extends AnyState, PN extends ProcessName>(
+export function withRedial<
+  PN extends ProcessName,
+  S extends AnyState = AnyState,
+>(
   processName: PN,
+  electronApi: ElectronApiIn<PN>,
   initializer: (init: RedialInit<S, PN>) => Store<S>,
 ): Store<S> {
   if (processName === "main") {
+    const mainApi = electronApi as ElectronMainApi;
+
     const options: RedialMainInit<S> = {
-      createForwardingMiddleware: createForwardToRendererMiddleware,
-      replayAction: replayActionInMain,
-      listenForStateRequests,
+      createForwardingMiddleware: getCreateForwardToRendererMiddleware(mainApi),
+      replayAction: getReplayActionInMain(mainApi),
+      listenForStateRequests: getListenForStateRequests(mainApi),
     };
 
     // @ts-ignore Don't know why this is failing, but it's valid.
@@ -141,10 +220,12 @@ export function withRedial<S extends AnyState, PN extends ProcessName>(
   }
 
   if (processName === "renderer") {
+    const rendererApi = electronApi as ElectronRendererApi;
+
     const options: RedialRendererInit<S> = {
-      createForwardingMiddleware: createForwardToMainMiddleware,
-      replayAction: replayActionInRenderer,
-      requestState: requestStateFromMain,
+      createForwardingMiddleware: getCreateForwardToMainMiddleware(rendererApi),
+      replayAction: getReplayActionInRenderer(rendererApi),
+      requestState: getRequestStateFromMain(rendererApi),
     };
 
     // @ts-ignore Don't know why this is failing, but it's valid.

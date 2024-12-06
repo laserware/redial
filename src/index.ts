@@ -1,4 +1,3 @@
-export type { ProcessName } from "./common.js";
 export type {
   CreateForwardingMiddlewareFunction,
   ForwardedAction,
@@ -10,4 +9,11 @@ export {
   type RedialMainInit,
   type RedialRendererInit,
 } from "./withRedial.js";
-export type { AnyAction, AnyState } from "./types.js";
+export type {
+  AnyAction,
+  AnyState,
+  ElectronApiIn,
+  ElectronMainApi,
+  ElectronRendererApi,
+  ProcessName,
+} from "./types.js";

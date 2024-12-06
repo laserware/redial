@@ -1,7 +1,11 @@
 import type { Store } from "@laserware/stasis";
 import type { IpcMainEvent } from "electron";
 
-import { getIpcMain, getIpcRenderer, IpcChannel } from "./common.js";
+import {
+  IpcChannel,
+  type ElectronMainApi,
+  type ElectronRendererApi,
+} from "./types.js";
 
 /**
  * Adds an IPC listener that allows the <i>renderer</i> process to get the current
@@ -9,27 +13,21 @@ import { getIpcMain, getIpcRenderer, IpcChannel } from "./common.js";
  * window reloads.
  *
  * @internal
- *
- * @template S Type definition for Redux state.
- *
- * @param store Redux store for the current process.
  */
-export async function listenForStateRequests<S>(
-  store: Store<S>,
-): Promise<void> {
-  const ipcMain = getIpcMain();
+export function getListenForStateRequests(ipcMain: ElectronMainApi) {
+  return async <S>(store: Store<S>): Promise<void> => {
+    const handleGetStateChannel = (event: IpcMainEvent): void => {
+      event.returnValue = store.getState();
+    };
 
-  const handleGetStateChannel = (event: IpcMainEvent): void => {
-    event.returnValue = store.getState();
+    try {
+      ipcMain.removeListener(IpcChannel.ForStateSync, handleGetStateChannel);
+    } catch {
+      // Do nothing.
+    }
+
+    ipcMain.addListener(IpcChannel.ForStateSync, handleGetStateChannel);
   };
-
-  try {
-    ipcMain.removeListener(IpcChannel.ForStateSync, handleGetStateChannel);
-  } catch {
-    // Do nothing.
-  }
-
-  ipcMain.addListener(IpcChannel.ForStateSync, handleGetStateChannel);
 }
 
 /**
@@ -42,11 +40,9 @@ export async function listenForStateRequests<S>(
  * browser refresh.
  *
  * @internal
- *
- * @template S Type definition for Redux state.
  */
-export function requestStateFromMain<S>(): S | undefined {
-  const ipcRenderer = getIpcRenderer();
-
-  return ipcRenderer.sendSync(IpcChannel.ForStateSync);
+export function getRequestStateFromMain(ipcRenderer: ElectronRendererApi) {
+  return <S>(): S | undefined => {
+    return ipcRenderer.sendSync(IpcChannel.ForStateSync);
+  };
 }
