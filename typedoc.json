@@ -28,5 +28,6 @@
   "markdownLinkExternal": true,
   "navigationLinks": { "GitHub": "https://github.com/laserware/sword" },
   "out": "site",
-  "readme": "./README.md"
+  "readme": "./README.md",
+  "useFirstParagraphOfCommentAsSummary": true
 }
