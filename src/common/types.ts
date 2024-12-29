@@ -1,7 +1,6 @@
 import type {
   Middleware,
   PayloadAction,
-  Store,
   UnknownAction,
 } from "@reduxjs/toolkit";
 
@@ -24,9 +23,19 @@ export enum IpcChannel {
   ForStateSync = "@laserware/redial/state-sync",
 }
 
+/**
+ * Additional data added to the `meta` property of an action to flag it as
+ * forwarded. This is required to prevent infinite loops caused by repeatedly
+ * dispatching the action after forwarding.
+ */
 export type RedialActionMeta = {
+  /** If `true`, the action has already been forwarded. */
   forwarded: boolean;
+
+  /** The BrowserWindow frame ID. */
   frameId: number;
+
+  /** Source from which the action was forwarded. */
   source: "main" | "renderer" | "unknown";
 };
 
@@ -40,19 +49,16 @@ export type RedialAction<P = any> = AnyAction<P> & {
   meta: { redial: RedialActionMeta };
 };
 
-export type RedialReturn<S> = {
-  store: Store<S>;
-  dispose(): void;
-};
-
 /**
  * Hooks that run before and after the action is sent from one process to another.
  * This is useful for doing things like ensuring the payload is serialized
  * prior to sending the action, or making a change to the action after it's
- * sent to the <i>renderer</i> process.
+ * sent to the renderer process.
  *
- * Note that the `afterSend` hook has no effect after sending the action to the <i>main</i>
+ * Note that the `afterSend` hook has no effect after sending the action to the main
  * process, as `next` isn't called, but it could be useful for logging purposes.
+ *
+ * @expand
  */
 export type ForwardToMiddlewareOptions = {
   /**
@@ -76,6 +82,10 @@ export type ForwardToMiddlewareOptions = {
 
 /**
  * Function that returns the forwarding middleware.
+ *
+ * @param [options] Options for forwarding middleware.
+ *
+ * @returns Redux middleware that forwards actions.
  */
 export type CreateForwardingMiddlewareFunction = (
   // Calling this "options" instead of "hooks" in case we need to add anything

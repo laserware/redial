@@ -17,31 +17,31 @@ import {
 
 /**
  * Object available as the argument in the {@linkcode redialRenderer} initializer
- * function in the <i>renderer</i> process.
+ * function in the renderer process.
  *
  * @template S Type definition for Redux state.
  */
 export type RedialRendererInit<S> = {
   /**
    * Creates the forwarding middleware that forwards dispatched actions to the
-   * <i>main</i> process.
+   * main process.
    */
   createForwardingMiddleware: CreateForwardingMiddlewareFunction;
 
   /**
-   * Synchronously request state from the <i>main</i> process.
+   * Synchronously request state from the main process.
    *
    * **Important Note**
    *
    * This will block the main thread until the state is returned from the
-   * <i>main</i> process. You should only use this in development to keep state
-   * synchronized between reloads of the <i>renderer</i> process.
+   * main process. You should only use this in development to keep state
+   * synchronized between reloads of the renderer process.
    */
   requestState: () => S | undefined;
 };
 
 /**
- * IPC API needed for the <i>renderer</i> process.
+ * IPC API needed for the renderer process.
  */
 export type IpcApi = Pick<
   IpcRenderer,
@@ -50,8 +50,8 @@ export type IpcApi = Pick<
 
 /**
  * Creates a Redux store that contains middleware for communicating with the
- * <i>main</i> process and keeping state in sync. Any actions dispatched from
- * the <i>renderer</i> process are automatically forwarded to the <i>main</i>
+ * main process and keeping state in sync. Any actions dispatched from
+ * the renderer process are automatically forwarded to the main
  * process.
  *
  * Note that you _must_ return the Redux store from the `initializer` callback.
@@ -96,12 +96,6 @@ export type IpcApi = Pick<
  *     },
  *   );
  *
- *   // If you need to do any cleanup, you can call the `dispose` function
- *   // returned from the function:
- *   onCleanup(() => {
- *     dispose();
- *   });
- *
  *   return store;
  * }
  */
@@ -130,8 +124,8 @@ export function redialRenderer<S extends AnyState = AnyState>(
 }
 
 /**
- * Whenever an action is fired from the <i>renderer</i> process, forward it to the
- * <i>main</i> process to ensure global state is in sync.
+ * Whenever an action is fired from the renderer process, forward it to the
+ * main process to ensure global state is in sync.
  *
  * @internal
  */

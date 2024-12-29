@@ -15,24 +15,22 @@ import {
   type RedialAction,
 } from "../common/types.js";
 
-export type { AnyState, RedialReturn } from "../common/types.js";
-
 /**
  * Object available as the argument in the {@linkcode redialMain} initializer
- * function in the <i>main</i> process.
+ * function in the main process.
  */
 export type RedialMainInit = {
   /**
    * Creates the forwarding middleware that forwards dispatched actions to the
-   * <i>renderer</i> process.
+   * renderer process.
    */
   createForwardingMiddleware: CreateForwardingMiddlewareFunction;
 };
 
 /**
  * Creates a Redux store that contains middleware for communicating with the
- * <i>renderer</i> process and keeping state in sync. Any actions dispatched from
- * the <i>main</i> process are automatically forwarded to the <i>renderer</i>
+ * renderer process and keeping state in sync. Any actions dispatched from
+ * the main process are automatically forwarded to the renderer
  * process.
  *
  * Note that you _must_ return the Redux store from the `initializer` callback.
@@ -101,8 +99,8 @@ function listenForStateRequests<S>(store: Store<S>): void {
 }
 
 /**
- * Whenever an action is fired from the <i>main</i> process, forward it to the
- * <i>renderer</i> process to ensure global state is in sync.
+ * Whenever an action is fired from the main process, forward it to the
+ * renderer process to ensure global state is in sync.
  *
  * @internal
  */
@@ -137,6 +135,8 @@ export function getForwardingMiddlewareCreator() {
       const allWebContents = webContents.getAllWebContents();
       for (const contentWindow of allWebContents) {
         redialAction = beforeSend(redialAction);
+
+        redialAction.meta.redial.frameId = contentWindow.id;
 
         contentWindow.send(IpcChannel.FromMain, redialAction);
 

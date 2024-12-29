@@ -1,7 +1,10 @@
 {
   "cleanOutputDir": true,
-  "customCss": "./docs/theme.css",
-  "entryPoints": ["./src/index.ts"],
+  "entryPoints": [
+    "./src/main/index.ts",
+    "./src/renderer/index.ts",
+    "./src/common/types.ts"
+  ],
   "exclude": ["**/**test.ts"],
   "excludeInternal": true,
   "excludeNotDocumented": true,
@@ -22,11 +25,11 @@
     "compactFolders": true,
     "excludeReferences": true,
     "includeCategories": true,
-    "includeFolders": true,
+    "includeFolders": false,
     "includeGroups": false
   },
   "markdownLinkExternal": true,
-  "navigationLinks": { "GitHub": "https://github.com/laserware/sword" },
+  "navigationLinks": { "GitHub": "https://github.com/laserware/redial" },
   "out": "site",
   "readme": "./README.md",
   "useFirstParagraphOfCommentAsSummary": true
