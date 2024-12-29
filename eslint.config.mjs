@@ -18,6 +18,12 @@ export default [
     },
   },
   {
+    files: ["example/**/*.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
     ignores: ["eslint.config.mjs"],
   },
 ];

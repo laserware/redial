@@ -6,7 +6,8 @@ import { redialRenderer } from "../../src/renderer";
 import { counterSlice } from "./store";
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("YO");
+  console.log("DOM content loaded!");
+
   setup();
 });
 
@@ -18,6 +19,7 @@ function setup(): void {
 
     const store = configureStore({
       reducer: counterSlice.reducer,
+      devTools: true,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(forwardToMainMiddleware),
     });
@@ -27,7 +29,7 @@ function setup(): void {
     });
 
     setInterval(() => {
-      store.dispatch(counterSlice.actions.increment());
+      store.dispatch(counterSlice.actions.incrementFromRenderer());
     }, 2000);
 
     return store;

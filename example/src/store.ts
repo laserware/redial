@@ -12,6 +12,12 @@ export const counterSlice = createSlice({
     increment(state) {
       state.value += 1;
     },
+    incrementFromMain(state) {
+      state.value += 1;
+    },
+    incrementFromRenderer(state) {
+      state.value += 1;
+    },
   },
   selectors: {
     selectValue: (state) => state.value,

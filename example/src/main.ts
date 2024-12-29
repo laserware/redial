@@ -1,5 +1,6 @@
 import { configureStore } from "@laserware/stasis";
 import { app, BrowserWindow } from "electron";
+import { installExtension, REDUX_DEVTOOLS } from "electron-devtools-installer";
 
 import { redialMain } from "../../src/main";
 
@@ -19,11 +20,9 @@ function setup(): void {
       console.log(store.getState());
     });
 
-    setTimeout(() => {
-      setInterval(() => {
-        store.dispatch(counterSlice.actions.increment());
-      }, 2000);
-    }, 1000);
+    setInterval(() => {
+      store.dispatch(counterSlice.actions.incrementFromMain());
+    }, 2000);
 
     return store;
   });
@@ -43,7 +42,13 @@ function createWindow(): void {
   mainWindow.loadFile("dist/renderer/index.html");
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await installExtension(REDUX_DEVTOOLS, {
+    loadExtensionOptions: {
+      allowFileAccess: true,
+    },
+  });
+
   createWindow();
 
   setup();
