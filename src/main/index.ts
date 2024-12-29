@@ -1,44 +1,32 @@
-import type { Middleware, Store } from "@laserware/stasis";
+import type { Action } from "@laserware/stasis";
+import type { Middleware, Store } from "@reduxjs/toolkit";
 import { ipcMain, webContents, type IpcMainEvent } from "electron";
 
-import { replayActionInProcess } from "../common/replay.js";
+import {
+  getRedialActionMeta,
+  isRedialAction,
+  toRedialAction,
+} from "../common/action.js";
 import {
   IpcChannel,
   type AnyState,
   type CreateForwardingMiddlewareFunction,
-  type ForwardedAction,
   type ForwardToMiddlewareOptions,
+  type RedialAction,
 } from "../common/types.js";
 
+export type { AnyState, RedialReturn } from "../common/types.js";
+
 /**
- * Object available as the argument in the {@linkcode withRedialMain} initializer
+ * Object available as the argument in the {@linkcode redialMain} initializer
  * function in the <i>main</i> process.
- *
- * @template S Type definition for Redux state.
  */
-export type RedialMainInit<S> = {
+export type RedialMainInit = {
   /**
    * Creates the forwarding middleware that forwards dispatched actions to the
    * <i>renderer</i> process.
    */
   createForwardingMiddleware: CreateForwardingMiddlewareFunction;
-
-  /**
-   * Replays the dispatched action from the <i>renderer</i> process in the
-   * <i>main</i> process.
-   *
-   * @param store Redux store instance.
-   */
-  replayAction: (store: Store<S>) => void;
-
-  /**
-   * Synchronously sends the current state to the <i>renderer</i> process when
-   * requested via {@linkcode RedialRendererInit.requestState}. This is
-   * useful for preserving state between reloads in the <i>renderer</i> process.
-   *
-   * @param store Redux store instance.
-   */
-  listenForStateRequests: (store: Store<S>) => void;
 };
 
 /**
@@ -54,19 +42,15 @@ export type RedialMainInit<S> = {
  * @param initializer Callback with Electron IPC middleware APIs as the `init` argument.
  *
  * @example
- * import { withRedialMain } from "@laserware/redial/main";
+ * import { redialMain } from "@laserware/redial/main";
  * import { configureStore } from "@reduxjs/toolkit";
  * import { ipcMain, webContents } from "electron";
  *
  * import { rootReducer } from "./rootReducer";
  *
  * function createStore() {
- *   return withRedialMain(
- *     ({
- *       createForwardingMiddleware,
- *       replayAction,
- *       listenForStateRequests,
- *     }) => {
+ *   const store = redialMain(
+ *     ({ createForwardingMiddleware }) => {
  *       const forwardToRendererMiddleware = createForwardingMiddleware();
  *
  *       const store = configureStore({
@@ -75,43 +59,45 @@ export type RedialMainInit<S> = {
  *            getDefaultMiddleware().concat(forwardToRendererMiddleware),
  *       });
  *
- *       replayAction(store);
- *
  *       listenForStateRequests(store);
  *
  *       return store;
  *     },
  *   );
+ *
+ *   return store;
  * }
  */
-export function withRedialMain<S extends AnyState = AnyState>(
-  initializer: (init: RedialMainInit<S>) => Store<S>,
+export function redialMain<S extends AnyState = AnyState>(
+  initializer: (init: RedialMainInit) => Store<S>,
 ): Store<S> {
-  const replayAction = <S>(store: Store<S>): void => {
-    replayActionInProcess(ipcMain, store);
-  };
-
-  const listenForStateRequests = async <S>(store: Store<S>): Promise<void> => {
-    const handleGetStateChannel = (event: IpcMainEvent): void => {
-      event.returnValue = store.getState();
-    };
-
-    try {
-      ipcMain.removeListener(IpcChannel.ForStateSync, handleGetStateChannel);
-    } catch {
-      // Do nothing.
-    }
-
-    ipcMain.addListener(IpcChannel.ForStateSync, handleGetStateChannel);
-  };
-
-  const init: RedialMainInit<S> = {
+  const init: RedialMainInit = {
     createForwardingMiddleware: getForwardingMiddlewareCreator(),
-    replayAction,
-    listenForStateRequests,
   };
 
-  return initializer(init);
+  const store = initializer(init);
+
+  listenForStateRequests(store);
+
+  const replayAction = (event: IpcMainEvent, action: Action): void => {
+    store.dispatch(action);
+  };
+
+  ipcMain
+    .removeListener(IpcChannel.FromRenderer, replayAction)
+    .addListener(IpcChannel.FromRenderer, replayAction);
+
+  return store;
+}
+
+function listenForStateRequests<S>(store: Store<S>): void {
+  const handleGetStateChannel = (event: IpcMainEvent): void => {
+    event.returnValue = store.getState();
+  };
+
+  ipcMain
+    .removeListener(IpcChannel.ForStateSync, handleGetStateChannel)
+    .addListener(IpcChannel.ForStateSync, handleGetStateChannel);
 }
 
 /**
@@ -129,33 +115,35 @@ export function getForwardingMiddlewareCreator() {
     const afterSend = options?.afterSend ?? noop;
 
     return () => (next) => (action) => {
-      let forwardedAction = action as ForwardedAction;
+      let redialAction: RedialAction;
 
-      if (forwardedAction.meta?.wasAlreadyForwarded ?? false) {
-        return next(action);
+      if (isRedialAction(action)) {
+        redialAction = action;
+      } else {
+        redialAction = toRedialAction(action);
       }
 
-      const existingMeta = forwardedAction.meta ?? {};
+      const redialMeta = getRedialActionMeta(redialAction);
 
-      // Add the `wasAlreadyForwarded` boolean to the action `meta` property.
-      // We append it to the existing `meta` (if already present):
-      forwardedAction.meta = {
-        ...existingMeta,
-        wasAlreadyForwarded: true,
-      };
+      if (redialMeta.forwarded || redialMeta.source === "main") {
+        return next(redialAction);
+      }
+
+      redialAction.meta.redial.forwarded = true;
+      redialAction.meta.redial.source = "main";
 
       // We send a message to all BrowserWindow instances to ensure they can
       // react to state updates.
       const allWebContents = webContents.getAllWebContents();
       for (const contentWindow of allWebContents) {
-        forwardedAction = beforeSend(forwardedAction);
+        redialAction = beforeSend(redialAction);
 
-        contentWindow.send(IpcChannel.ForMiddleware, forwardedAction);
+        contentWindow.send(IpcChannel.FromMain, redialAction);
 
-        forwardedAction = afterSend(forwardedAction);
+        afterSend(redialAction);
       }
 
-      return next(action);
+      return next(redialAction);
     };
   };
 }

@@ -1,17 +1,22 @@
-import type { Middleware, Store } from "@laserware/stasis";
-import type { IpcRenderer } from "electron";
+import type { Action } from "@laserware/stasis";
+import type { Middleware, Store } from "@reduxjs/toolkit";
+import type { IpcRenderer, IpcRendererEvent } from "electron";
 
-import { replayActionInProcess } from "../common/replay.js";
+import {
+  getRedialActionMeta,
+  isRedialAction,
+  toRedialAction,
+} from "../common/action.js";
 import {
   IpcChannel,
   type AnyState,
   type CreateForwardingMiddlewareFunction,
-  type ForwardedAction,
   type ForwardToMiddlewareOptions,
+  type RedialAction,
 } from "../common/types.js";
 
 /**
- * Object available as the argument in the {@linkcode withRedial} initializer
+ * Object available as the argument in the {@linkcode redialRenderer} initializer
  * function in the <i>renderer</i> process.
  *
  * @template S Type definition for Redux state.
@@ -22,14 +27,6 @@ export type RedialRendererInit<S> = {
    * <i>main</i> process.
    */
   createForwardingMiddleware: CreateForwardingMiddlewareFunction;
-
-  /**
-   * Replays the dispatched action from the <i>main</i> process in the
-   * <i>renderer</i> process.
-   *
-   * @param store Redux store instance.
-   */
-  replayAction: (store: Store<S>) => void;
 
   /**
    * Synchronously request state from the <i>main</i> process.
@@ -48,7 +45,7 @@ export type RedialRendererInit<S> = {
  */
 export type IpcApi = Pick<
   IpcRenderer,
-  "addListener" | "removeListener" | "send" | "sendSync"
+  "addListener" | "removeListener" | "sendSync" | "send"
 >;
 
 /**
@@ -65,7 +62,7 @@ export type IpcApi = Pick<
  * @param initializer Callback with Electron IPC middleware APIs as the `init` argument.
  *
  * @example
- * import { withRedialRenderer } from "@laserware/redial/renderer";
+ * import { redialRenderer } from "@laserware/redial/renderer";
  * import { configureStore } from "@reduxjs/toolkit";
  *
  * import { rootReducer } from "./rootReducer";
@@ -73,17 +70,11 @@ export type IpcApi = Pick<
  * // Assuming you're not using context isolation:
  * const ipcRenderer = window.require("electron").ipcRenderer;
  *
- * function createStore() {
- *   return withRedialRenderer(
- *     {
- *       addListener: (...args) => ipcRenderer.addListener(...args),
- *       removeListener: (...args) => ipcRenderer.removeListener(...args),
- *       send: (...args) => ipcRenderer.send(...args),
- *       sendSync: (...args) => ipcRenderer.sendSync(...args),
- *     },
+ * function createStore(onCleanup) {
+ *   const store = redialRenderer(
+ *     window.require("electron").ipcRenderer,
  *     ({
  *       createForwardingMiddleware,
- *       replayAction,
  *       requestState,
  *     }) => {
  *       const forwardToMainMiddleware = createForwardingMiddleware();
@@ -101,32 +92,41 @@ export type IpcApi = Pick<
  *           getDefaultMiddleware().concat(forwardToMainMiddleware),
  *       });
  *
- *       replayAction(store);
- *
  *       return store;
  *     },
  *   );
+ *
+ *   // If you need to do any cleanup, you can call the `dispose` function
+ *   // returned from the function:
+ *   onCleanup(() => {
+ *     dispose();
+ *   });
+ *
+ *   return store;
  * }
  */
-export function withRedialRenderer<S extends AnyState = AnyState>(
+export function redialRenderer<S extends AnyState = AnyState>(
   ipcApi: IpcApi,
   initializer: (init: RedialRendererInit<S>) => Store<S>,
 ): Store<S> {
-  const replayAction = <S>(store: Store<S>): void => {
-    replayActionInProcess(ipcApi, store);
-  };
-
-  const requestState = <S>(): S | undefined => {
-    return ipcApi.sendSync(IpcChannel.ForStateSync);
-  };
+  const requestState = <S>(): S | undefined =>
+    ipcApi.sendSync(IpcChannel.ForStateSync);
 
   const init: RedialRendererInit<S> = {
     createForwardingMiddleware: getForwardingMiddlewareCreator(ipcApi),
-    replayAction,
     requestState,
   };
 
-  return initializer(init);
+  const store = initializer(init);
+
+  const replayAction = (event: IpcRendererEvent, action: Action): void => {
+    store.dispatch(action);
+  };
+
+  ipcApi.removeListener(IpcChannel.FromMain, replayAction);
+  ipcApi.addListener(IpcChannel.FromMain, replayAction);
+
+  return store;
 }
 
 /**
@@ -146,31 +146,36 @@ function getForwardingMiddlewareCreator(ipcApi: IpcApi) {
     const afterSend = hooks?.afterSend ?? noop;
 
     return () => (next) => (action) => {
-      let forwardedAction = action as ForwardedAction;
+      let redialAction: RedialAction;
 
-      // @ts-ignore
-      if (forwardedAction.type?.startsWith("@@")) {
-        return next(action);
+      if (isRedialAction(action)) {
+        redialAction = action;
+      } else {
+        redialAction = toRedialAction(action);
       }
 
-      const wasAlreadyForwarded =
-        forwardedAction.meta?.wasAlreadyForwarded ?? false;
-
-      const shouldBeForwarded = !wasAlreadyForwarded;
-
-      if (shouldBeForwarded) {
-        forwardedAction = beforeSend(forwardedAction);
-
-        ipcApi.send(IpcChannel.ForMiddleware, forwardedAction);
-
-        // No reason to reassign `forwardedAction` here as this is the end of the
-        // line. But it could be useful for logging or introspection:
-        afterSend(forwardedAction);
-
-        return undefined;
+      if (redialAction.type?.startsWith("@@")) {
+        return next(redialAction);
       }
 
-      return next(action);
+      const redialMeta = getRedialActionMeta(redialAction);
+
+      if (redialMeta.forwarded || redialMeta.source === "renderer") {
+        return next(redialAction);
+      }
+
+      redialAction = beforeSend(redialAction);
+
+      redialAction.meta.redial.forwarded = true;
+      redialAction.meta.redial.source = "renderer";
+
+      ipcApi.send(IpcChannel.FromRenderer, redialAction);
+
+      // No reason to reassign `redialAction` here as this is the end of the
+      // line. But it could be useful for logging or introspection:
+      afterSend(redialAction);
+
+      return next(redialAction);
     };
   };
 }

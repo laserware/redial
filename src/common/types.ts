@@ -1,11 +1,13 @@
 import type {
   Middleware,
   PayloadAction,
+  Store,
   UnknownAction,
-} from "@laserware/stasis";
+} from "@reduxjs/toolkit";
 
 /**
- * Represents a Redux [action](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow#actions) that could be unknown or has a specific payload `P`.
+ * Represents a Redux [action](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow#actions)
+ * that could be unknown or has a specific payload `P`.
  *
  * @template P Payload of the action (if defined).
  */
@@ -17,9 +19,16 @@ export type AnyAction<P = any> = UnknownAction | PayloadAction<P>;
 export type AnyState = Record<string, any>;
 
 export enum IpcChannel {
-  ForMiddleware = "@laserware/redial/middleware",
+  FromMain = "@laserware/redial/from-main",
+  FromRenderer = "@laserware/redial/from-renderer",
   ForStateSync = "@laserware/redial/state-sync",
 }
+
+export type RedialActionMeta = {
+  forwarded: boolean;
+  frameId: number;
+  source: "main" | "renderer" | "unknown";
+};
 
 /**
  * Redux action with additional metadata to indicate if the action was already
@@ -27,8 +36,13 @@ export enum IpcChannel {
  *
  * @template P Payload of the forwarded action.
  */
-export type ForwardedAction<P = any> = AnyAction<P> & {
-  meta?: { wasAlreadyForwarded: boolean };
+export type RedialAction<P = any> = AnyAction<P> & {
+  meta: { redial: RedialActionMeta };
+};
+
+export type RedialReturn<S> = {
+  store: Store<S>;
+  dispose(): void;
 };
 
 /**
@@ -48,7 +62,7 @@ export type ForwardToMiddlewareOptions = {
    *
    * @param action Action prior to forwarding.
    */
-  beforeSend?<P = any>(action: ForwardedAction<P>): ForwardedAction<P>;
+  beforeSend?<P = any>(action: RedialAction<P>): RedialAction<P>;
 
   /**
    * Callback fired after the action is sent to the other process.
@@ -57,7 +71,7 @@ export type ForwardToMiddlewareOptions = {
    *
    * @param action Action after forwarding.
    */
-  afterSend?<P = any>(action: ForwardedAction<P>): ForwardedAction<P>;
+  afterSend?<P = any>(action: RedialAction<P>): RedialAction<P>;
 };
 
 /**
