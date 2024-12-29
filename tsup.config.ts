@@ -1,9 +1,10 @@
 import { builtinModules } from "node:module";
 
-import { defineConfig } from "tsup";
+import { defineConfig, Options } from "tsup";
 
 export default defineConfig(() => {
-  const commonOptions = {
+  const commonOptions: Options = {
+    bundle: true,
     clean: true,
     // This is forwarded to Redux, just in case:
     define: {
@@ -14,7 +15,6 @@ export default defineConfig(() => {
       // And also exclude Node internals from build.
       ...builtinModules.flatMap((name) => [name, `node:${name}`]),
     ],
-    entry: ["src/index.ts"],
     minify: false,
     sourcemap: true,
     tsconfig: "./tsconfig.build.json",
@@ -23,16 +23,43 @@ export default defineConfig(() => {
   return [
     {
       ...commonOptions,
+      name: "Renderer (MJS)",
       dts: true,
+      entry: { renderer: "src/renderer/index.ts" },
       format: "esm",
+      outExtension: () => ({ js: ".mjs" }),
+      platform: "browser",
       target: "esnext",
       treeshake: true,
-      outExtension: () => ({ js: ".mjs" }),
     },
     {
       ...commonOptions,
+      name: "Renderer (CJS)",
+      dts: false,
+      entry: { renderer: "src/renderer/index.ts" },
       format: "cjs",
       outExtension: () => ({ js: ".cjs" }),
+      platform: "browser",
     },
-  ];
+    {
+      ...commonOptions,
+      name: "Main (ESM)",
+      dts: true,
+      entry: { main: "src/main/index.ts" },
+      format: "esm",
+      outExtension: () => ({ js: ".mjs" }),
+      platform: "node",
+      target: "esnext",
+      treeshake: true,
+    },
+    {
+      ...commonOptions,
+      name: "Main (CJS)",
+      dts: false,
+      entry: { main: "src/main/index.ts" },
+      format: "cjs",
+      outExtension: () => ({ js: ".cjs" }),
+      platform: "node",
+    },
+  ] as Options[];
 });

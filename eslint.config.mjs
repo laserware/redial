@@ -6,7 +6,7 @@ const thisDirPath = fileURLToPath(new URL(".", import.meta.url));
 
 const baseConfigs = getBaseConfigs({
   tsConfigRootDir: thisDirPath,
-  tsConfigFiles: ["./tsconfig.json", "./tsconfig.node.json"],
+  tsConfigFiles: ["./tsconfig.json", "./tsconfig.eslint.json"],
 });
 
 export default [
