@@ -1,5 +1,5 @@
 import { configureStore } from "@laserware/stasis";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, net } from "electron";
 import { installExtension, REDUX_DEVTOOLS } from "electron-devtools-installer";
 
 import { redialMain } from "../../src/main";
@@ -45,6 +45,7 @@ app.whenReady().then(async () => {
     loadExtensionOptions: {
       allowFileAccess: true,
     },
+    forceDownload: net.isOnline(),
   });
 
   createWindow();
