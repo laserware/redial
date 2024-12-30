@@ -11,7 +11,9 @@ import type { AnyAction, RedialAction, RedialActionMeta } from "./types.js";
  *
  * @internal
  */
-export function isActionLike(action: unknown): action is AnyAction {
+export function isActionLike(
+  action: unknown,
+): action is AnyAction & { meta?: any } {
   if (action === null) {
     return false;
   }
@@ -61,13 +63,17 @@ export function wasActionAlreadyForwarded(
   action: RedialAction,
   source: "main" | "renderer",
 ): boolean {
-  return action.meta.redial.forwarded || action.meta.redial.source === source;
+  if (isRedialAction(action)) {
+    return action.meta.redial.forwarded || action.meta.redial.source === source;
+  } else {
+    return false;
+  }
 }
 
 function isRedialAction<P = any>(value: any): value is RedialAction<P> {
-  if (typeof value !== "object") {
+  if (isActionLike(value)) {
+    return "redial" in (value?.meta ?? {});
+  } else {
     return false;
   }
-
-  return "redial" in (value?.meta ?? {});
 }
