@@ -7,25 +7,23 @@ import { redialMain } from "../../src/main";
 import { counterSlice } from "./store";
 
 function setup(): void {
-  redialMain(({ createForwardingMiddleware }) => {
+  const store = redialMain(({ createForwardingMiddleware }) => {
     const forwardToRendererMiddleware = createForwardingMiddleware();
 
-    const store = configureStore({
+    return configureStore({
       reducer: counterSlice.reducer,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(forwardToRendererMiddleware),
     });
-
-    store.subscribe(() => {
-      console.log(store.getState());
-    });
-
-    setInterval(() => {
-      store.dispatch(counterSlice.actions.incrementFromMain());
-    }, 2000);
-
-    return store;
   });
+
+  store.subscribe(() => {
+    console.log(store.getState());
+  });
+
+  setInterval(() => {
+    store.dispatch(counterSlice.actions.incrementFromMain());
+  }, 2000);
 }
 
 function createWindow(): void {
