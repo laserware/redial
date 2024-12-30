@@ -17,6 +17,11 @@ export type AnyAction<P = any> = UnknownAction | PayloadAction<P>;
  */
 export type AnyState = Record<string, any>;
 
+/**
+ * IPC channels for communicating between main and renderer processes.
+ *
+ * @internal
+ */
 export enum IpcChannel {
   FromMain = "@laserware/redial/from-main",
   FromRenderer = "@laserware/redial/from-renderer",
@@ -35,13 +40,18 @@ export type RedialActionMeta = {
   /** The BrowserWindow frame ID. */
   frameId: number;
 
-  /** Source from which the action was forwarded. */
+  /** Source process from which the action was forwarded. */
   source: "main" | "renderer" | "unknown";
 };
 
 /**
  * Redux action with additional metadata to indicate if the action was already
  * forwarded from the other process.
+ *
+ * @remarks
+ * The metadata is assigned to the `meta` property of the dispatched action in
+ * middleware and forwarded to the opposing process (i.e. main process actions
+ * are sent to the renderer process and vice versa).
  *
  * @template P Payload of the forwarded action.
  */
@@ -55,8 +65,7 @@ export type RedialAction<P = any> = AnyAction<P> & {
  * prior to sending the action, or making a change to the action after it's
  * sent to the renderer process.
  *
- * Note that the `afterSend` hook has no effect after sending the action to the main
- * process, as `next` isn't called, but it could be useful for logging purposes.
+ * Note that the `afterSend`
  *
  * @expand
  */

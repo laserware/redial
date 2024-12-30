@@ -3,16 +3,16 @@ import type { Middleware, Store } from "@reduxjs/toolkit";
 import type { IpcRenderer, IpcRendererEvent } from "electron";
 
 import {
-  getRedialActionMeta,
-  isRedialAction,
+  isActionLike,
   toRedialAction,
+  wasActionAlreadyForwarded,
 } from "../common/action.js";
+import { isStore } from "../common/isStore.js";
 import {
   IpcChannel,
   type AnyState,
   type CreateForwardingMiddlewareFunction,
   type ForwardToMiddlewareOptions,
-  type RedialAction,
 } from "../common/types.js";
 
 /**
@@ -31,19 +31,46 @@ export type RedialRendererInit<S> = {
   /**
    * Synchronously request state from the main process.
    *
-   * **Important Note**
+   * > [!CAUTION]
+   * > This will block the main thread until the state is returned from the
+   * > main process. You should only use this in development to keep state
+   * > synchronized between reloads of the renderer process.
    *
-   * This will block the main thread until the state is returned from the
-   * main process. You should only use this in development to keep state
-   * synchronized between reloads of the renderer process.
+   * @example
+   * function createStore() {
+   *   const ipcRenderer = window.require("electron").ipcRenderer;
+   *
+   *   const store = redialRenderer(
+   *     ipcRenderer,
+   *     ({ createForwardingMiddleware, requestState }) => {
+   *       // ...
+   *
+   *       // The `preloadedState` entry can be `undefined`, so no need to
+   *       // initialize a value here:
+   *       let preloadedState;
+   *
+   *       // Vite exposes the `MODE` environment variable to determine if
+   *       // running in development or production:
+   *       if (import.meta.env.MODE === "development") {
+   *         preloadedState = requestState();
+   *       }
+   *
+   *       return configureStore({
+   *         preloadedState,
+   *         // ...
+   *       });
+   *     },
+   *   );
+   * }
    */
   requestState: () => S | undefined;
 };
 
 /**
- * IPC API needed for the renderer process.
+ * Methods needed from the [ipcRenderer](https://www.electronjs.org/docs/latest/api/ipc-renderer)
+ * API to listen for and send events to the main process.
  */
-export type IpcApi = Pick<
+export type IpcRendererMethods = Pick<
   IpcRenderer,
   "addListener" | "removeListener" | "sendSync" | "send"
 >;
@@ -54,14 +81,21 @@ export type IpcApi = Pick<
  * the renderer process are automatically forwarded to the main
  * process.
  *
- * Note that you _must_ return the Redux store from the `initializer` callback.
+ * > [!IMPORTANT]
+ * > You **must** return the Redux store from the `initializer` callback.
  *
  * @template S Type definition for Redux state.
  *
- * @param ipcApi Electron IPC API for the renderer process.
- * @param initializer Callback with Electron IPC middleware APIs as the `init` argument.
+ * @param ipcRenderer Electron IPC API for the renderer process. This is required because the APIs may only
+ *                    be accessible via a custom global object exposed via [contextBridge](https://www.electronjs.org/docs/latest/api/context-bridge).
+ * @param initializer Callback with Electron IPC middleware APIs as the `init` argument (must return a Redux store).
+ *
+ * @throws {Error} If the store isn't returned from the `initializer` callback.
  *
  * @example
+ * **Simple Configuration**
+ *
+ * ```ts
  * import { redialRenderer } from "@laserware/redial/renderer";
  * import { configureStore } from "@reduxjs/toolkit";
  *
@@ -70,13 +104,10 @@ export type IpcApi = Pick<
  * // Assuming you're not using context isolation:
  * const ipcRenderer = window.require("electron").ipcRenderer;
  *
- * function createStore(onCleanup) {
+ * function createStore() {
  *   const store = redialRenderer(
- *     window.require("electron").ipcRenderer,
- *     ({
- *       createForwardingMiddleware,
- *       requestState,
- *     }) => {
+ *     ipcRenderer,
+ *     ({ createForwardingMiddleware, requestState }) => {
  *       const forwardToMainMiddleware = createForwardingMiddleware();
  *
  *       // Note that this is blocking, so we only do it in development:
@@ -85,22 +116,66 @@ export type IpcApi = Pick<
  *         preloadedState = requestState();
  *       }
  *
- *       const store = configureStore({
+ *       return configureStore({
  *         preloadedState,
  *         reducer: rootReducer,
  *         middleware: (getDefaultMiddleware) =>
  *           getDefaultMiddleware().concat(forwardToMainMiddleware),
  *       });
- *
- *       return store;
  *     },
  *   );
  *
  *   return store;
  * }
+ * ```
+ *
+ * **Advanced Configuration**
+ *
+ * ```ts
+ * import { redialRenderer } from "@laserware/redial/renderer";
+ * import { configureStore } from "@reduxjs/toolkit";
+ * import createSagaMiddleware from "redux-saga";
+ *
+ * import { rootReducer } from "./rootReducer";
+ * import { rendererSagas } from "./sagas";
+ *
+ * // Assuming you're not using context isolation:
+ * const ipcRenderer = window.require("electron").ipcRenderer;
+ *
+ * function createStore() {
+ *   // Initializing this in outer scope so we can call `.run` after the store
+ *   // is created:
+ *   const sagaMiddleware = createSagaMiddleware();
+ *
+ *   const store = redialRenderer(
+ *     ipcRenderer,
+ *     ({ createForwardingMiddleware, requestState }) => {
+ *       const forwardToMainMiddleware = createForwardingMiddleware();
+ *
+ *       // ... State request code (see previous example) ...
+ *
+ *       return configureStore({
+ *         reducer: rootReducer,
+ *          middleware: (getDefaultMiddleware) =>
+ *            // Note that the order matters. The forwarding middleware will
+ *            // forward any actions dispatched by your side effects library.
+ *            // If you swap the order, any actions dispatched from a saga won't
+ *            // make it to the main process:
+ *            getDefaultMiddleware().concat(sagaMiddleware, forwardToMainMiddleware),
+ *       });
+ *     },
+ *   );
+ *
+ *   // Call `.run` _after_ configuring the store to ensure forwarding is working
+ *   // before executing any sagas:
+ *   sagaMiddleware.run(rendererSagas);
+ *
+ *   return store;
+ * }
+ * ```
  */
 export function redialRenderer<S extends AnyState = AnyState>(
-  ipcApi: IpcApi,
+  ipcRenderer: IpcRendererMethods,
   initializer: (init: RedialRendererInit<S>) => Store<S>,
 ): Store<S> {
   const replayActions = (store: Store<S>): void => {
@@ -108,19 +183,24 @@ export function redialRenderer<S extends AnyState = AnyState>(
       store.dispatch(action);
     };
 
-    ipcApi.removeListener(IpcChannel.FromMain, handleAction);
-    ipcApi.addListener(IpcChannel.FromMain, handleAction);
+    ipcRenderer.removeListener(IpcChannel.FromMain, handleAction);
+    ipcRenderer.addListener(IpcChannel.FromMain, handleAction);
   };
 
   const requestState = (): S | undefined =>
-    ipcApi.sendSync(IpcChannel.ForStateSync);
+    ipcRenderer.sendSync(IpcChannel.ForStateSync);
 
   const init: RedialRendererInit<S> = {
-    createForwardingMiddleware: getForwardingMiddlewareCreator(ipcApi),
+    createForwardingMiddleware: getForwardingMiddlewareCreator(ipcRenderer),
     requestState,
   };
 
   const store = initializer(init);
+
+  if (!isStore(store)) {
+    // prettier-ignore
+    throw new Error("The value returned from the redial initializer callback is not a Redux store");
+  }
 
   replayActions(store);
 
@@ -133,7 +213,7 @@ export function redialRenderer<S extends AnyState = AnyState>(
  *
  * @internal
  */
-function getForwardingMiddlewareCreator(ipcApi: IpcApi) {
+function getForwardingMiddlewareCreator(ipcRenderer: IpcRendererMethods) {
   // Used as a fallback for undefined hooks.
   const noop = <A = any>(action: A): A => action;
 
@@ -144,21 +224,17 @@ function getForwardingMiddlewareCreator(ipcApi: IpcApi) {
     const afterSend = hooks?.afterSend ?? noop;
 
     return () => (next) => (action) => {
-      let redialAction: RedialAction;
-
-      if (isRedialAction(action)) {
-        redialAction = action;
-      } else {
-        redialAction = toRedialAction(action);
+      if (!isActionLike(action)) {
+        return next(action);
       }
+
+      let redialAction = toRedialAction(action);
 
       if (redialAction.type?.startsWith("@@")) {
         return next(redialAction);
       }
 
-      const redialMeta = getRedialActionMeta(redialAction);
-
-      if (redialMeta.forwarded || redialMeta.source === "renderer") {
+      if (wasActionAlreadyForwarded(redialAction, "renderer")) {
         return next(redialAction);
       }
 
@@ -167,11 +243,9 @@ function getForwardingMiddlewareCreator(ipcApi: IpcApi) {
       redialAction.meta.redial.forwarded = true;
       redialAction.meta.redial.source = "renderer";
 
-      ipcApi.send(IpcChannel.FromRenderer, redialAction);
+      ipcRenderer.send(IpcChannel.FromRenderer, redialAction);
 
-      // No reason to reassign `redialAction` here as this is the end of the
-      // line. But it could be useful for logging or introspection:
-      afterSend(redialAction);
+      redialAction = afterSend(redialAction);
 
       return next(redialAction);
     };

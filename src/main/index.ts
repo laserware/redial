@@ -3,16 +3,16 @@ import type { Middleware, Store } from "@reduxjs/toolkit";
 import { ipcMain, webContents, type IpcMainEvent } from "electron";
 
 import {
-  getRedialActionMeta,
-  isRedialAction,
+  isActionLike,
   toRedialAction,
+  wasActionAlreadyForwarded,
 } from "../common/action.js";
+import { isStore } from "../common/isStore.js";
 import {
   IpcChannel,
   type AnyState,
   type CreateForwardingMiddlewareFunction,
   type ForwardToMiddlewareOptions,
-  type RedialAction,
 } from "../common/types.js";
 
 /**
@@ -33,13 +33,24 @@ export type RedialMainInit = {
  * the main process are automatically forwarded to the renderer
  * process.
  *
- * Note that you _must_ return the Redux store from the `initializer` callback.
+ * > [!IMPORTANT]
+ * > You **must** return the Redux store from the `initializer` callback.
+ * >
+ * > If you need to perform any additional operations after the store is created,
+ * > you should use the return value of `redialMain`, rather than the return
+ * > value of `configureStore`. Limit the contents of the `initializer` callback
+ * > to store configuration code only. If you try putting
  *
  * @template S Type definition for Redux state.
  *
- * @param initializer Callback with Electron IPC middleware APIs as the `init` argument.
+ * @param initializer Callback with Electron IPC middleware APIs as the `init` argument (must return a Redux store).
+ *
+ * @throws {Error} If the store isn't returned from the `initializer` callback.
  *
  * @example
+ * **Simple Configuration**
+ *
+ * ```ts
  * import { redialMain } from "@laserware/redial/main";
  * import { configureStore } from "@reduxjs/toolkit";
  * import { ipcMain, webContents } from "electron";
@@ -51,20 +62,57 @@ export type RedialMainInit = {
  *     ({ createForwardingMiddleware }) => {
  *       const forwardToRendererMiddleware = createForwardingMiddleware();
  *
- *       const store = configureStore({
+ *       return configureStore({
  *         reducer: rootReducer,
  *          middleware: (getDefaultMiddleware) =>
  *            getDefaultMiddleware().concat(forwardToRendererMiddleware),
  *       });
- *
- *       listenForStateRequests(store);
- *
- *       return store;
  *     },
  *   );
  *
  *   return store;
  * }
+ * ```
+ *
+ * **Advanced Configuration**
+ *
+ * ```ts
+ * import { redialMain } from "@laserware/redial/main";
+ * import { configureStore } from "@reduxjs/toolkit";
+ * import { ipcMain, webContents } from "electron";
+ * import createSagaMiddleware from "redux-saga";
+ *
+ * import { rootReducer } from "./rootReducer";
+ * import { mainSagas } from "./sagas";
+ *
+ * function createStore() {
+ *   // Initializing this in outer scope so we can call `.run` after the store
+ *   // is created:
+ *   const sagaMiddleware = createSagaMiddleware();
+ *
+ *   const store = redialMain(
+ *     ({ createForwardingMiddleware }) => {
+ *       const forwardToRendererMiddleware = createForwardingMiddleware();
+ *
+ *       return configureStore({
+ *         reducer: rootReducer,
+ *          middleware: (getDefaultMiddleware) =>
+ *            // Note that the order matters. The forwarding middleware will
+ *            // forward any actions dispatched by your side effects library.
+ *            // If you swap the order, any actions dispatched from a saga won't
+ *            // make it to the renderer process:
+ *            getDefaultMiddleware().concat(sagaMiddleware, forwardToRendererMiddleware),
+ *       });
+ *     },
+ *   );
+ *
+ *   // Call `.run` _after_ configuring the store to ensure forwarding is working
+ *   // before executing any sagas:
+ *   sagaMiddleware.run(mainSagas);
+ *
+ *   return store;
+ * }
+ * ```
  */
 export function redialMain<S extends AnyState = AnyState>(
   initializer: (init: RedialMainInit) => Store<S>,
@@ -95,6 +143,11 @@ export function redialMain<S extends AnyState = AnyState>(
 
   const store = initializer(init);
 
+  if (!isStore(store)) {
+    // prettier-ignore
+    throw new Error("The value returned from the redial initializer callback is not a Redux store");
+  }
+
   replayActions(store);
 
   listenForStateRequests(store);
@@ -117,17 +170,13 @@ export function getForwardingMiddlewareCreator() {
     const afterSend = options?.afterSend ?? noop;
 
     return () => (next) => (action) => {
-      let redialAction: RedialAction;
-
-      if (isRedialAction(action)) {
-        redialAction = action;
-      } else {
-        redialAction = toRedialAction(action);
+      if (!isActionLike(action)) {
+        return next(action);
       }
 
-      const redialMeta = getRedialActionMeta(redialAction);
+      let redialAction = toRedialAction(action);
 
-      if (redialMeta.forwarded || redialMeta.source === "main") {
+      if (wasActionAlreadyForwarded(redialAction, "main")) {
         return next(redialAction);
       }
 
@@ -144,7 +193,7 @@ export function getForwardingMiddlewareCreator() {
 
         contentWindow.send(IpcChannel.FromMain, redialAction);
 
-        afterSend(redialAction);
+        redialAction = afterSend(redialAction);
       }
 
       return next(redialAction);
