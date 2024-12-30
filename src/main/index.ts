@@ -69,33 +69,37 @@ export type RedialMainInit = {
 export function redialMain<S extends AnyState = AnyState>(
   initializer: (init: RedialMainInit) => Store<S>,
 ): Store<S> {
+  const replayActions = (store: Store<S>): void => {
+    const handleAction = (event: IpcMainEvent, action: Action): void => {
+      store.dispatch(action);
+    };
+
+    ipcMain
+      .removeListener(IpcChannel.FromRenderer, handleAction)
+      .addListener(IpcChannel.FromRenderer, handleAction);
+  };
+
+  const listenForStateRequests = (store: Store<S>): void => {
+    const handleGetStateChannel = (event: IpcMainEvent): void => {
+      event.returnValue = store.getState();
+    };
+
+    ipcMain
+      .removeListener(IpcChannel.ForStateSync, handleGetStateChannel)
+      .addListener(IpcChannel.ForStateSync, handleGetStateChannel);
+  };
+
   const init: RedialMainInit = {
     createForwardingMiddleware: getForwardingMiddlewareCreator(),
   };
 
   const store = initializer(init);
 
+  replayActions(store);
+
   listenForStateRequests(store);
 
-  const replayAction = (event: IpcMainEvent, action: Action): void => {
-    store.dispatch(action);
-  };
-
-  ipcMain
-    .removeListener(IpcChannel.FromRenderer, replayAction)
-    .addListener(IpcChannel.FromRenderer, replayAction);
-
   return store;
-}
-
-function listenForStateRequests<S>(store: Store<S>): void {
-  const handleGetStateChannel = (event: IpcMainEvent): void => {
-    event.returnValue = store.getState();
-  };
-
-  ipcMain
-    .removeListener(IpcChannel.ForStateSync, handleGetStateChannel)
-    .addListener(IpcChannel.ForStateSync, handleGetStateChannel);
 }
 
 /**

@@ -103,7 +103,16 @@ export function redialRenderer<S extends AnyState = AnyState>(
   ipcApi: IpcApi,
   initializer: (init: RedialRendererInit<S>) => Store<S>,
 ): Store<S> {
-  const requestState = <S>(): S | undefined =>
+  const replayActions = (store: Store<S>): void => {
+    const handleAction = (event: IpcRendererEvent, action: Action): void => {
+      store.dispatch(action);
+    };
+
+    ipcApi.removeListener(IpcChannel.FromMain, handleAction);
+    ipcApi.addListener(IpcChannel.FromMain, handleAction);
+  };
+
+  const requestState = (): S | undefined =>
     ipcApi.sendSync(IpcChannel.ForStateSync);
 
   const init: RedialRendererInit<S> = {
@@ -113,12 +122,7 @@ export function redialRenderer<S extends AnyState = AnyState>(
 
   const store = initializer(init);
 
-  const replayAction = (event: IpcRendererEvent, action: Action): void => {
-    store.dispatch(action);
-  };
-
-  ipcApi.removeListener(IpcChannel.FromMain, replayAction);
-  ipcApi.addListener(IpcChannel.FromMain, replayAction);
+  replayActions(store);
 
   return store;
 }
