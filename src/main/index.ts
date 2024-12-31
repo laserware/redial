@@ -1,2 +1,1 @@
-export { redialMain, type RedialMainInit } from "./redialMain.js";
-export { createRedialMainMiddleware } from "./middlewares.js";
+export { createRedialMainMiddleware } from "./createMainMiddleware.js";

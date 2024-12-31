@@ -1,7 +1,6 @@
 import type { Action, MiddlewareAPI } from "@reduxjs/toolkit";
 import { ipcMain, webContents, type IpcMainEvent } from "electron";
 
-import { isAction } from "../common/guards.js";
 import {
   IpcChannel,
   type AnyAction,
@@ -45,7 +44,7 @@ export function createRedialMainMiddleware(
     }
 
     return (next) => (action) => {
-      if (!isAction(action)) {
+      if (action?.type === undefined) {
         return next(action);
       }
 

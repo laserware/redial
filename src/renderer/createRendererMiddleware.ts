@@ -1,7 +1,6 @@
 import type { Action, MiddlewareAPI } from "@reduxjs/toolkit";
 import type { IpcRendererEvent } from "electron";
 
-import { isAction } from "../common/guards.js";
 import {
   IpcChannel,
   type AnyAction,
@@ -36,7 +35,7 @@ export function createRedialRendererMiddleware(
      * Forwards actions to the main process.
      */
     return (next) => (action) => {
-      if (!isAction(action)) {
+      if (action?.type === undefined) {
         return next(action);
       }
 
