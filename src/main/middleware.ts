@@ -1,13 +1,10 @@
 import type { Middleware } from "@reduxjs/toolkit";
 import { webContents } from "electron";
 
-import {
-  isActionLike,
-  toRedialAction,
-  wasActionAlreadyForwarded,
-} from "../common/action.js";
+import { isAction } from "../common/guards.js";
 import {
   IpcChannel,
+  type AnyAction,
   type ForwardToMiddlewareOptions,
 } from "../common/types.js";
 
@@ -26,33 +23,25 @@ export function getForwardToRendererMiddlewareCreator() {
     const afterSend = options?.afterSend ?? noop;
 
     return () => (next) => (action) => {
-      if (!isActionLike(action)) {
+      if (!isAction(action)) {
         return next(action);
       }
 
-      let redialAction = toRedialAction(action);
-
-      if (wasActionAlreadyForwarded(redialAction, "main")) {
-        return next(redialAction);
+      if (action.meta?.redial?.forwarded) {
+        return next(action);
       }
 
-      redialAction.meta.redial.forwarded = true;
-      redialAction.meta.redial.source = "main";
+      action.meta = { ...action.meta, redial: { forwarded: true } };
 
-      // We send a message to all BrowserWindow instances to ensure they can
-      // react to state updates.
-      const allWebContents = webContents.getAllWebContents();
-      for (const contentWindow of allWebContents) {
-        redialAction = beforeSend(redialAction);
+      for (const contentWindow of webContents.getAllWebContents()) {
+        action = beforeSend(action as AnyAction);
 
-        redialAction.meta.redial.frameId = contentWindow.id;
+        contentWindow.send(IpcChannel.FromMain, action);
 
-        contentWindow.send(IpcChannel.FromMain, redialAction);
-
-        redialAction = afterSend(redialAction);
+        action = afterSend(action as AnyAction);
       }
 
-      return next(redialAction);
+      return next(action);
     };
   };
 }

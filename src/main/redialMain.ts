@@ -2,7 +2,7 @@ import type { Action } from "@laserware/stasis";
 import type { Store } from "@reduxjs/toolkit";
 import { ipcMain, type IpcMainEvent } from "electron";
 
-import { isStore } from "../common/isStore.js";
+import { isStore } from "../common/guards.js";
 import {
   IpcChannel,
   type AnyState,

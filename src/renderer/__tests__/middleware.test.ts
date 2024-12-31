@@ -66,7 +66,7 @@ describe("the getForwardToMainMiddlewareCreator function", () => {
 
     const alreadyForwardedAction = {
       type: "TEST_ACTION",
-      meta: { redial: { forwarded: true, source: "renderer", frameId: 0 } },
+      meta: { redial: { forwarded: true } },
     };
     expect(middleware(store)(next)(alreadyForwardedAction)).toEqual(alreadyForwardedAction);
 
@@ -74,7 +74,7 @@ describe("the getForwardToMainMiddlewareCreator function", () => {
 
     const incrementAction = counterSlice.actions.increment();
     const result = middleware(store)(next)(incrementAction) as RedialAction;
-    expect(result.meta.redial).toEqual({ forwarded: true, source: "renderer", frameId: 0 });
+    expect(result.meta.redial).toEqual({ forwarded: true });
     expect(beforeSend).toHaveBeenCalledWith(result);
     expect(afterSend).toHaveBeenCalledWith(result);
   });

@@ -1,13 +1,10 @@
 import type { Middleware } from "@reduxjs/toolkit";
 import type { IpcRenderer } from "electron";
 
-import {
-  isActionLike,
-  toRedialAction,
-  wasActionAlreadyForwarded,
-} from "../common/action.js";
+import { isAction } from "../common/guards.js";
 import {
   IpcChannel,
+  type AnyAction,
   type ForwardToMiddlewareOptions,
 } from "../common/types.js";
 
@@ -41,30 +38,27 @@ export function getForwardToMainMiddlewareCreator(
     const afterSend = hooks?.afterSend ?? noop;
 
     return () => (next) => (action) => {
-      if (!isActionLike(action)) {
+      if (!isAction(action)) {
         return next(action);
       }
 
-      if (action.type?.startsWith("@@")) {
+      if (action.type.startsWith("@@")) {
         return next(action);
       }
 
-      let redialAction = toRedialAction(action);
-
-      if (wasActionAlreadyForwarded(redialAction, "renderer")) {
-        return next(redialAction);
+      if (action.meta?.redial?.forwarded) {
+        return next(action);
       }
 
-      redialAction = beforeSend(redialAction);
+      action.meta = { ...action.meta, redial: { forwarded: true } };
 
-      redialAction.meta.redial.forwarded = true;
-      redialAction.meta.redial.source = "renderer";
+      action = beforeSend(action);
 
-      ipcRenderer.send(IpcChannel.FromRenderer, redialAction);
+      ipcRenderer.send(IpcChannel.FromRenderer, action);
 
-      redialAction = afterSend(redialAction);
+      afterSend(action as AnyAction);
 
-      return next(redialAction);
+      return next(action);
     };
   };
 }

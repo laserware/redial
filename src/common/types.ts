@@ -29,22 +29,6 @@ export enum IpcChannel {
 }
 
 /**
- * Additional data added to the `meta` property of an action to flag it as
- * forwarded. This is required to prevent infinite loops caused by repeatedly
- * dispatching the action after forwarding.
- */
-export type RedialActionMeta = {
-  /** If `true`, the action has already been forwarded. */
-  forwarded: boolean;
-
-  /** The BrowserWindow frame ID. */
-  frameId: number;
-
-  /** Source process from which the action was forwarded. */
-  source: "main" | "renderer" | "unknown";
-};
-
-/**
  * Redux action with additional metadata to indicate if the action was already
  * forwarded from the other process.
  *
@@ -56,7 +40,7 @@ export type RedialActionMeta = {
  * @template P Payload of the forwarded action.
  */
 export type RedialAction<P = any> = AnyAction<P> & {
-  meta: { redial: RedialActionMeta };
+  meta: { redial: { forwarded: boolean } };
 };
 
 /**
@@ -77,7 +61,7 @@ export type ForwardToMiddlewareOptions = {
    *
    * @param action Action prior to forwarding.
    */
-  beforeSend?<P = any>(action: RedialAction<P>): RedialAction<P>;
+  beforeSend?<P = any>(action: AnyAction<P>): AnyAction<P>;
 
   /**
    * Callback fired after the action is sent to the other process.
@@ -86,7 +70,7 @@ export type ForwardToMiddlewareOptions = {
    *
    * @param action Action after forwarding.
    */
-  afterSend?<P = any>(action: RedialAction<P>): RedialAction<P>;
+  afterSend?<P = any>(action: AnyAction<P>): AnyAction<P>;
 };
 
 /**
