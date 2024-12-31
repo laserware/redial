@@ -5,7 +5,7 @@ import { isAction } from "../common/guards.js";
 import {
   IpcChannel,
   type AnyAction,
-  type ForwardToMiddlewareOptions,
+  type RedialMiddlewareOptions,
 } from "../common/types.js";
 
 /**
@@ -32,33 +32,36 @@ export function getForwardToMainMiddlewareCreator(
   const noop = <A = any>(action: A): A => action;
 
   return function createForwardToMainMiddleware(
-    hooks?: ForwardToMiddlewareOptions,
+    hooks?: RedialMiddlewareOptions,
   ): Middleware {
     const beforeSend = hooks?.beforeSend ?? noop;
     const afterSend = hooks?.afterSend ?? noop;
 
-    return () => (next) => (action) => {
-      if (!isAction(action)) {
+    return (api) => {
+      console.log(api);
+      return (next) => (action) => {
+        if (!isAction(action)) {
+          return next(action);
+        }
+
+        if (action.type.startsWith("@@")) {
+          return next(action);
+        }
+
+        if (action.meta?.redial?.forwarded) {
+          return next(action);
+        }
+
+        action.meta = { ...action.meta, redial: { forwarded: true } };
+
+        action = beforeSend(action);
+
+        ipcRenderer.send(IpcChannel.FromRenderer, action);
+
+        afterSend(action as AnyAction);
+
         return next(action);
-      }
-
-      if (action.type.startsWith("@@")) {
-        return next(action);
-      }
-
-      if (action.meta?.redial?.forwarded) {
-        return next(action);
-      }
-
-      action.meta = { ...action.meta, redial: { forwarded: true } };
-
-      action = beforeSend(action);
-
-      ipcRenderer.send(IpcChannel.FromRenderer, action);
-
-      afterSend(action as AnyAction);
-
-      return next(action);
+      };
     };
   };
 }

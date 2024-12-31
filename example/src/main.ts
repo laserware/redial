@@ -1,7 +1,7 @@
 import { combineReducers, configureStore, type Store } from "@reduxjs/toolkit";
 import { app, BrowserWindow, ipcMain } from "electron";
 
-import { redialMain } from "../../src/main";
+import { createRedialMainMiddleware } from "../../src/main";
 
 import { counterSlice } from "./store";
 
@@ -10,37 +10,41 @@ start();
 async function start(): Promise<void> {
   await app.whenReady();
 
-  createWindow();
-
   const store = createStore();
+
+  createWindow();
 
   ipcMain.addListener("increment", () => {
     store.dispatch(counterSlice.actions.increment());
   });
 
-  app.on("activate", function () {
+  app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
 
-  app.on("window-all-closed", function () {
+  app.on("window-all-closed", () => {
     app.quit();
   });
 }
 
 function createStore(): Store {
-  return redialMain(({ createForwardingMiddleware }) => {
-    const forwardToRendererMiddleware = createForwardingMiddleware();
+  const redialMiddleware = createRedialMainMiddleware();
 
-    return configureStore({
-      reducer: combineReducers({
-        counter: counterSlice.reducer,
-      }),
-      middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(forwardToRendererMiddleware),
-    });
+  const store = configureStore({
+    reducer: combineReducers({
+      counter: counterSlice.reducer,
+    }),
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(redialMiddleware),
   });
+
+  app.on("before-quit", () => {
+    redialMiddleware.dispose();
+  });
+
+  return store;
 }
 
 function createWindow(): void {

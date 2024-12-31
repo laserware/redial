@@ -1,6 +1,9 @@
 import { combineReducers, configureStore, type Store } from "@reduxjs/toolkit";
 
-import { redialRenderer } from "../../src/renderer";
+import {
+  createRedialRendererMiddleware,
+  getMainStateSync,
+} from "../../src/renderer";
 
 import { counterSlice } from "./store";
 
@@ -16,27 +19,27 @@ function createStore(): Store {
 
   const isDevelopment = /development/gi.test(import.meta.env.MODE);
 
-  const store = redialRenderer(
-    ipcRenderer,
-    ({ createForwardingMiddleware, requestState }) => {
-      const forwardToMainMiddleware = createForwardingMiddleware();
+  const redialMiddleware = createRedialRendererMiddleware(ipcRenderer);
 
-      let preloadedState: any;
+  let preloadedState: any;
 
-      if (isDevelopment) {
-        preloadedState = requestState();
-      }
+  if (isDevelopment) {
+    preloadedState = getMainStateSync(ipcRenderer);
+  }
 
-      return configureStore({
-        preloadedState,
-        reducer: combineReducers({
-          counter: counterSlice.reducer,
-        }),
-        middleware: (getDefaultMiddleware) =>
-          getDefaultMiddleware().concat(forwardToMainMiddleware),
-      });
-    },
-  );
+  const store = configureStore({
+    preloadedState,
+    reducer: combineReducers({
+      counter: counterSlice.reducer,
+    }),
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(redialMiddleware),
+  });
+
+  window.addEventListener("beforeunload", () => {
+    console.log("Disposing");
+    redialMiddleware.dispose();
+  });
 
   window.store = store;
 

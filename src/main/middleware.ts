@@ -5,7 +5,7 @@ import { isAction } from "../common/guards.js";
 import {
   IpcChannel,
   type AnyAction,
-  type ForwardToMiddlewareOptions,
+  type RedialMiddlewareOptions,
 } from "../common/types.js";
 
 /**
@@ -18,7 +18,7 @@ export function getForwardToRendererMiddlewareCreator() {
   // Used as a fallback for undefined hooks.
   const noop = <A = any>(action: A): A => action;
 
-  return (options?: ForwardToMiddlewareOptions): Middleware => {
+  return (options?: RedialMiddlewareOptions): Middleware => {
     const beforeSend = options?.beforeSend ?? noop;
     const afterSend = options?.afterSend ?? noop;
 

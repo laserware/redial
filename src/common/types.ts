@@ -3,6 +3,21 @@ import type {
   PayloadAction,
   UnknownAction,
 } from "@reduxjs/toolkit";
+import type { IpcRenderer } from "electron";
+
+/**
+ * Represents a resource that can be cleaned up by calling the `dispose` method.
+ */
+export interface IDisposable {
+  /** When called, cleans up any resources. */
+  dispose(): void;
+}
+
+/**
+ * Return value for middleware that adheres to the Middleware API and provides
+ * a `dispose` method that can be called to free resources.
+ */
+export type RedialMiddleware = Middleware & IDisposable;
 
 /**
  * Represents a Redux [action](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow#actions)
@@ -22,9 +37,10 @@ export type AnyState = Record<string, any>;
  *
  * @internal
  */
-export enum IpcChannel {
+export const enum IpcChannel {
   FromMain = "@laserware/redial/from-main",
   FromRenderer = "@laserware/redial/from-renderer",
+  ForStateAsync = "@laserware/redial/state-async",
   ForStateSync = "@laserware/redial/state-sync",
 }
 
@@ -49,11 +65,9 @@ export type RedialAction<P = any> = AnyAction<P> & {
  * prior to sending the action, or making a change to the action after it's
  * sent to the renderer process.
  *
- * Note that the `afterSend`
- *
  * @expand
  */
-export type ForwardToMiddlewareOptions = {
+export interface RedialMiddlewareOptions {
   /**
    * Callback fired before the action is sent to the other process.
    *
@@ -71,7 +85,7 @@ export type ForwardToMiddlewareOptions = {
    * @param action Action after forwarding.
    */
   afterSend?<P = any>(action: AnyAction<P>): AnyAction<P>;
-};
+}
 
 /**
  * Function that returns the forwarding middleware.
@@ -83,5 +97,14 @@ export type ForwardToMiddlewareOptions = {
 export type CreateForwardingMiddlewareFunction = (
   // Calling this "options" instead of "hooks" in case we need to add anything
   // else here.
-  options?: ForwardToMiddlewareOptions,
+  options?: RedialMiddlewareOptions,
 ) => Middleware;
+
+/**
+ * Methods needed from the [ipcRenderer](https://www.electronjs.org/docs/latest/api/ipc-renderer)
+ * API to listen for and send events to the main process.
+ */
+export type IpcRendererMethods = Pick<
+  IpcRenderer,
+  "addListener" | "removeListener" | "sendSync" | "send" | "invoke"
+>;
