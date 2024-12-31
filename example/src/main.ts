@@ -14,8 +14,8 @@ async function start(): Promise<void> {
 
   createWindow();
 
-  ipcMain.addListener("increment", () => {
-    store.dispatch(counterSlice.actions.increment());
+  ipcMain.addListener("action", (event, action: any) => {
+    store.dispatch(action);
   });
 
   app.on("activate", () => {

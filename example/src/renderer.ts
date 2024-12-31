@@ -1,11 +1,11 @@
+import { createElement as html } from "@laserware/dominator";
 import { combineReducers, configureStore, type Store } from "@reduxjs/toolkit";
 
-import {
-  createRedialRendererMiddleware,
-  getMainStateSync,
-} from "../../src/renderer";
+import { createRedialRendererMiddleware } from "../../src/renderer";
 
 import { counterSlice } from "./store";
+
+import classes from "./renderer.module.css";
 
 declare global {
   interface Window {
@@ -14,9 +14,9 @@ declare global {
   }
 }
 
-function createStore(): Store {
-  const ipcRenderer = window.require("electron").ipcRenderer;
+const ipcRenderer = window.require("electron").ipcRenderer;
 
+function createStore(): Store {
   const isDevelopment = /development/gi.test(import.meta.env.MODE);
 
   const redialMiddleware = createRedialRendererMiddleware(ipcRenderer);
@@ -24,7 +24,7 @@ function createStore(): Store {
   let preloadedState: any;
 
   if (isDevelopment) {
-    preloadedState = getMainStateSync(ipcRenderer);
+    preloadedState = redialMiddleware.getMainStateSync();
   }
 
   const store = configureStore({
@@ -47,46 +47,51 @@ function createStore(): Store {
 }
 
 function start(): void {
-  document.body.innerHTML = `
-  <div>
-    <h1>Example 3</h1>
-    <button id="increment">Increment</button>
-    <button id="decrement">Decrement</button>
-    <button id="main">Main</button>
-  
-    <output id="output"></output>
-  </div>
-  `;
-
   const store = createStore();
 
-  const incrementButton =
-    document.querySelector<HTMLButtonElement>("#increment");
-  const decrementButton =
-    document.querySelector<HTMLButtonElement>("#decrement");
-  const mainButton = document.querySelector<HTMLButtonElement>("#main");
-
-  const output = document.querySelector<HTMLOutputElement>("output");
-
-  incrementButton!.addEventListener("click", (event) => {
-    event.preventDefault();
-    store.dispatch(counterSlice.actions.increment());
-  });
-
-  decrementButton!.addEventListener("click", (event) => {
-    event.preventDefault();
-    store.dispatch(counterSlice.actions.decrement());
-  });
-
-  mainButton!.addEventListener("click", (event) => {
-    event.preventDefault();
-
-    window.require("electron").ipcRenderer.send("increment");
-  });
+  const { actions } = counterSlice;
 
   const selectValue = counterSlice.selectors.selectValue;
 
-  output!.innerHTML = selectValue(store.getState()).toString();
+  const output = html("output", selectValue(store.getState()).toString());
+
+  const actionButton = (
+    label: string,
+    onclick: () => void,
+  ): HTMLButtonElement =>
+    html("button", { className: classes.button, onclick }, label);
+
+  const rendererButtons = html(
+    "div",
+    { className: classes.buttonsContainer },
+    actionButton("Increment", () => store.dispatch(actions.increment())),
+    actionButton("Decrement", () => store.dispatch(actions.decrement())),
+    actionButton("Reset", () => store.dispatch(actions.reset())),
+  );
+
+  const sendToMain = (action: any): void => ipcRenderer.send("action", action);
+
+  const mainButtons = html(
+    "div",
+    { className: classes.buttonsContainer },
+    actionButton("Increment", () => sendToMain(actions.increment())),
+    actionButton("Decrement", () => sendToMain(actions.decrement())),
+    actionButton("Reset", () => sendToMain(actions.reset())),
+  );
+
+  const base = html(
+    "div",
+    { className: classes.base },
+    html("h1", "Example"),
+    html("h2", "Renderer"),
+    rendererButtons,
+    html("h2", "Main"),
+    mainButtons,
+    html("h2", "Current Value"),
+    output,
+  );
+
+  document.body.appendChild(base);
 
   store.subscribe(() => {
     const value = selectValue(store.getState());
