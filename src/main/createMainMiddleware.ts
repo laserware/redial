@@ -17,14 +17,36 @@ type HandlerName = "forwardAction" | "asyncStateRequest" | "syncStateRequest";
 export type RedialMainMiddleware = Middleware & IDisposable;
 
 /**
- * Whenever an action is fired from the main process, forward it to the
- * renderer process to ensure global state is in sync. The optional `hooks`
- * argument allows you to make changes to the action prior to forwarding and
- * after forwarding before passing the action to the next middlewares.
+ * Creates middleware that forwards dispatched actions to the renderer process
+ * to ensure global state is in sync. The optional `hooks` argument allows you
+ * to make changes to the action prior to forwarding and after forwarding before
+ * passing the action to the next middlewares.
  *
  * @param [hooks] Optional hooks to run before and after the action is forwarded.
  *
  * @returns Middleware with a `dispose` method for cleaning up any IPC event listeners.
+ *
+ * @example
+ * import { createRedialMainMiddleware } from "@laserware/redial/main";
+ * import { configureStore, type Store } from "@reduxjs/toolkit";
+ * import { app } from "electron";
+ *
+ * import { rootReducer } from "../common/rootReducer";
+ *
+ * export function createStore(): Store {
+ *   const redialMiddleware = createRedialMainMiddleware();
+ *
+ *   const store = configureStore({
+ *     reducer: rootReducer,
+ *     middleware: (getDefaultMiddleware) =>
+ *       getDefaultMiddleware().concat(redialMiddleware),
+ *   });
+ *
+ *   app.on("before-quit", () => {
+ *     // Perform cleanup:
+ *     redialMiddleware.dispose();
+ *   });
+ * }
  */
 export function createRedialMainMiddleware(
   hooks?: RedialMiddlewareHooks,

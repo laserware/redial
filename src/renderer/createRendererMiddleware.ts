@@ -62,10 +62,36 @@ export interface RedialRendererMiddleware extends Middleware, IDisposable {
  * argument allows you to make changes to the action prior to forwarding and
  * after forwarding before passing the action to the next middlewares.
  *
- * @param ipcRenderer Methods
+ * @param ipcRenderer Required methods from [ipcRenderer](https://www.electronjs.org/docs/latest/api/ipc-renderer).
  * @param [hooks] Optional hooks to run before and after the action is forwarded.
  *
  * @returns Middleware with a `dispose` method for cleaning up any IPC event listeners.
+ *
+ * @example
+ * import { createRedialRendererMiddleware } from "@laserware/redial/renderer";
+ * import { configureStore, type Store } from "@reduxjs/toolkit";
+ *
+ * import { rootReducer } from "../common/rootReducer";
+ *
+ * // Assuming no context isolation:
+ * const ipcRenderer = window.require("electron").ipcRenderer;
+ *
+ * export function createStore(): Store {
+ *   const redialMiddleware = createRedialRendererMiddleware();
+ *
+ *   let preloadedState;
+ *   // If using Vite:
+ *   if (import.meta.env.MODE === "development") {
+ *     preloadedState = redialMiddleware.getMainStateSync();
+ *   }
+ *
+ *   const store = configureStore({
+ *     preloadedState,
+ *     reducer: rootReducer,
+ *     middleware: (getDefaultMiddleware) =>
+ *       getDefaultMiddleware().concat(redialMiddleware),
+ *   });
+ * }
  */
 export function createRedialRendererMiddleware(
   ipcRenderer: IpcRendererMethods,
