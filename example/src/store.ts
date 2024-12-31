@@ -1,4 +1,4 @@
-import { configureStore, createSlice } from "@laserware/stasis";
+import { createSlice } from "@reduxjs/toolkit";
 
 export const counterSlice = createSlice({
   name: "counter",
@@ -12,22 +12,8 @@ export const counterSlice = createSlice({
     increment(state) {
       state.value += 1;
     },
-    incrementFromMain(state) {
-      state.value += 1;
-    },
-    incrementFromRenderer(state) {
-      state.value += 1;
-    },
   },
   selectors: {
     selectValue: (state) => state.value,
   },
 });
-
-export function createStore() {
-  return configureStore({
-    reducer: {
-      counter: counterSlice.reducer,
-    },
-  });
-}

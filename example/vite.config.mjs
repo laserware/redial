@@ -2,15 +2,21 @@ import { builtinModules } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { defineConfig } from "vite";
+import { defineConfig, mergeConfig } from "vite";
 
 const rootDirPath = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig(({ mode }) => {
-  const [processName] = mode.replace("@", "").split("/");
+  const [processName, env] = mode.replace("@", "").split("/");
+
+  const SERVER_PORT = 25_000;
 
   const commonOptions = {
     base: "./",
+    define: {
+      __ENV__: JSON.stringify(env),
+      __DEV_SERVER_PORT__: JSON.stringify(SERVER_PORT),
+    },
     build: {
       emptyOutDir: false,
       minify: false,
@@ -29,33 +35,39 @@ export default defineConfig(({ mode }) => {
   };
 
   if (processName === "main") {
-    return {
-      ...commonOptions,
-      build: {
-        ...commonOptions.build,
-        outDir: join("dist", "main"),
-        lib: {
-          entry: join("src", "main.ts"),
-          formats: ["cjs"],
-        },
-      },
-    };
-  }
-
-  if (processName === "renderer") {
-    return {
-      ...commonOptions,
-      build: {
-        ...commonOptions.build,
-        outDir: join("dist", "renderer"),
-        rollupOptions: {
-          ...commonOptions.build.rollupOptions,
-          input: {
-            renderer: resolve(rootDirPath, "index.html"),
+    return mergeConfig(
+      commonOptions,
+      {
+        build: {
+          outDir: join("dist", "main"),
+          lib: {
+            entry: join("src", "main.ts"),
+            formats: ["cjs"],
           },
         },
       },
-    };
+      false,
+    );
+  }
+
+  if (processName === "renderer") {
+    return mergeConfig(
+      commonOptions,
+      {
+        build: {
+          outDir: join("dist", "renderer"),
+          rollupOptions: {
+            input: {
+              renderer: resolve(rootDirPath, "index.html"),
+            },
+          },
+        },
+        server: {
+          port: SERVER_PORT,
+        },
+      },
+      false,
+    );
   }
 
   throw new Error(`Invalid process name ${processName}`);

@@ -4,19 +4,20 @@
   "version": "1.0.0",
   "main": "dist/main/main.js",
   "scripts": {
-    "build:renderer": "vite build --mode @renderer/development",
-    "build:main": "vite build --mode @main/development",
-    "build": "npm run build:main && npm run build:renderer",
-    "start": "npm run build && electron ."
+    "build:renderer": "vite build --mode @renderer/production",
+    "start:renderer": "vite serve --mode @renderer/development",
+    "build:main:development": "vite build --mode @main/development",
+    "build:main:production": "vite build --mode @main/production",
+    "start:main": "electron .",
+    "build": "npm run build:main:production && npm run build:renderer",
+    "start:watch": "npm run build:main:development && concurrently --kill-others \"npm run start:main\" \"npm run start:renderer\"",
+    "start": "npm run build && npm run start:main"
   },
   "author": "Mike Rourke <mike.w.rourke@gmail.com>",
   "license": "MIT",
-  "dependencies": {
-    "@laserware/stasis": "^4.1.0"
-  },
   "devDependencies": {
+    "concurrently": "^9.1.1",
     "electron": "^33.2.1",
-    "electron-devtools-installer": "^4.0.0",
     "vite": "^6.0.6"
   }
 }
