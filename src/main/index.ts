@@ -1,1 +1,4 @@
-export { createRedialMainMiddleware } from "./createMainMiddleware.js";
+export {
+  createRedialMainMiddleware,
+  type RedialMainMiddleware,
+} from "./createMainMiddleware.js";

@@ -1,10 +1,13 @@
 import { EventEmitter } from "node:events";
 
-import { combineReducers, configureStore, createSlice } from "@laserware/stasis";
+import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
 
-import { IpcChannel, type IpcRendererMethods, type RedialAction } from "../../common/types.js";
-import { createRedialRendererMiddleware } from "../createRendererMiddleware.js";
-import { getMainStateSync } from "../getMainState.js";
+import { IpcChannel, type RedialAction } from "../../types.js";
+
+import {
+  createRedialRendererMiddleware,
+  type IpcRendererMethods,
+} from "../createRendererMiddleware.js";
 
 const counterSlice = createSlice({
   name: "counter",
@@ -60,7 +63,7 @@ describe("the createRedialRendererMiddleware function", () => {
 
     const redialMiddleware = createRedialRendererMiddleware(ipcRenderer, { beforeSend, afterSend });
 
-    const preloadedState = getMainStateSync(ipcRenderer);
+    const preloadedState = redialMiddleware.getMainStateSync();
 
     expect(ipcRenderer.sendSync).toHaveBeenCalledWith(IpcChannel.ForStateSync);
 
@@ -133,5 +136,24 @@ describe("the createRedialRendererMiddleware function", () => {
     const incrementAction = counterSlice.actions.increment();
     const result = redialMiddleware(store)(next)(incrementAction) as RedialAction;
     expect(result.meta.redial).toEqual({ forwarded: true });
+  });
+
+  it("creates middleware with getter functions for main state", async () => {
+    const ipcRenderer = getIpcRenderer();
+
+    const redialMiddleware = createRedialRendererMiddleware(ipcRenderer);
+
+    const store = configureStore({
+      reducer: combineReducers({ counter: counterSlice.reducer }),
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(redialMiddleware),
+    });
+
+    const expected = store.getState();
+
+    vi.mocked(ipcRenderer.invoke).mockResolvedValueOnce(expected);
+    vi.mocked(ipcRenderer.sendSync).mockReturnValueOnce(expected);
+
+    expect(await redialMiddleware.getMainState()).toEqual(expected);
+    expect(redialMiddleware.getMainStateSync()).toEqual(expected);
   });
 });

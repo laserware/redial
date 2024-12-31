@@ -43,7 +43,7 @@
     "docs:generate": "typedoc  --options typedoc.json",
     "docs:serve": "mkdir -p ./site && cd ./site && ../node_modules/.bin/vite",
     "typecheck": "tsc --noEmit",
-    "prettier": "prettier --cache --write src",
+    "prettier": "prettier --cache --write src example/src",
     "prettier:ci": "prettier --check src",
     "eslint": "eslint --cache src tsup.config.ts",
     "vitest": "vitest",

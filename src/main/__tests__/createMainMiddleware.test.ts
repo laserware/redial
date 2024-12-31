@@ -5,7 +5,8 @@ import { ipcMain } from "electron";
 // eslint-disable-next-line no-restricted-imports
 import type { Mock } from "vitest";
 
-import { IpcChannel, type RedialAction } from "../../common/types.js";
+import { IpcChannel, type RedialAction } from "../../types.js";
+
 import { createRedialMainMiddleware } from "../createMainMiddleware.js";
 
 type State = { counter: { value: number } };

@@ -1,9 +1,4 @@
-import type {
-  Middleware,
-  PayloadAction,
-  UnknownAction,
-} from "@reduxjs/toolkit";
-import type { IpcRenderer } from "electron";
+import type { PayloadAction, UnknownAction } from "@reduxjs/toolkit";
 
 /**
  * Represents a resource that can be cleaned up by calling the `dispose` method.
@@ -12,12 +7,6 @@ export interface IDisposable {
   /** When called, cleans up any resources. */
   dispose(): void;
 }
-
-/**
- * Return value for middleware that adheres to the Middleware API and provides
- * a `dispose` method that can be called to free resources.
- */
-export type RedialMiddleware = Middleware & IDisposable;
 
 /**
  * Represents a Redux [action](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow#actions)
@@ -64,10 +53,8 @@ export type RedialAction<P = any> = AnyAction<P> & {
  * This is useful for doing things like ensuring the payload is serialized
  * prior to sending the action, or making a change to the action after it's
  * sent to the renderer process.
- *
- * @expand
  */
-export interface RedialMiddlewareOptions {
+export interface RedialMiddlewareHooks {
   /**
    * Callback fired before the action is sent to the other process.
    *
@@ -75,7 +62,7 @@ export interface RedialMiddlewareOptions {
    *
    * @param action Action prior to forwarding.
    */
-  beforeSend?<P = any>(action: AnyAction<P>): AnyAction<P>;
+  beforeSend?<P = any>(action: RedialAction<P>): RedialAction<P>;
 
   /**
    * Callback fired after the action is sent to the other process.
@@ -84,27 +71,5 @@ export interface RedialMiddlewareOptions {
    *
    * @param action Action after forwarding.
    */
-  afterSend?<P = any>(action: AnyAction<P>): AnyAction<P>;
+  afterSend?<P = any>(action: RedialAction<P>): RedialAction<P>;
 }
-
-/**
- * Function that returns the forwarding middleware.
- *
- * @param [options] Options for forwarding middleware.
- *
- * @returns Redux middleware that forwards actions.
- */
-export type CreateForwardingMiddlewareFunction = (
-  // Calling this "options" instead of "hooks" in case we need to add anything
-  // else here.
-  options?: RedialMiddlewareOptions,
-) => Middleware;
-
-/**
- * Methods needed from the [ipcRenderer](https://www.electronjs.org/docs/latest/api/ipc-renderer)
- * API to listen for and send events to the main process.
- */
-export type IpcRendererMethods = Pick<
-  IpcRenderer,
-  "addListener" | "removeListener" | "sendSync" | "send" | "invoke"
->;

@@ -3,7 +3,7 @@
   "entryPoints": [
     "./src/main/index.ts",
     "./src/renderer/index.ts",
-    "./src/common/types.ts"
+    "./src/types.ts"
   ],
   "exclude": ["**/**test.ts"],
   "excludeInternal": true,
@@ -11,6 +11,7 @@
   "externalSymbolLinkMappings": {
     "redux": {
       "Middleware": "https://redux.js.org/api/applymiddleware#overview",
+      "MiddlewareAPI": "https://redux.js.org/api/applymiddleware#overview",
       "State": "https://redux.js.org/tutorials/essentials/part-1-overview-concepts#state-management",
       "Store": "https://redux.js.org/api/store",
       "UnknownAction": "https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow#actions"

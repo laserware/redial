@@ -1,28 +1,35 @@
-import type { Action, MiddlewareAPI } from "@reduxjs/toolkit";
+import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
 import { ipcMain, webContents, type IpcMainEvent } from "electron";
 
+import { getMiddlewareForwarder } from "../internal.js";
 import {
   IpcChannel,
-  type AnyAction,
   type IDisposable,
-  type RedialMiddleware,
-  type RedialMiddlewareOptions,
-} from "../common/types.js";
+  type RedialMiddlewareHooks,
+} from "../types.js";
 
 type HandlerName = "forwardAction" | "asyncStateRequest" | "syncStateRequest";
 
 /**
+ * Return value for the main middleware that adheres to the Middleware API and
+ * provides a `dispose` method that can be called to free resources.
+ */
+export type RedialMainMiddleware = Middleware & IDisposable;
+
+/**
  * Whenever an action is fired from the main process, forward it to the
- * renderer process to ensure global state is in sync.
+ * renderer process to ensure global state is in sync. The optional `hooks`
+ * argument allows you to make changes to the action prior to forwarding and
+ * after forwarding before passing the action to the next middlewares.
+ *
+ * @param [hooks] Optional hooks to run before and after the action is forwarded.
+ *
+ * @returns Middleware with a `dispose` method for cleaning up any IPC event listeners.
  */
 export function createRedialMainMiddleware(
-  options?: RedialMiddlewareOptions,
-): RedialMiddleware {
-  // Used as a fallback for undefined hooks.
-  const noop = <A = any>(action: A): A => action;
-
-  const beforeSend = options?.beforeSend ?? noop;
-  const afterSend = options?.afterSend ?? noop;
+  hooks?: RedialMiddlewareHooks,
+): RedialMainMiddleware {
+  const forwarder = getMiddlewareForwarder(hooks);
 
   const disposables = new Map<HandlerName, IDisposable | undefined>([
     ["forwardAction", undefined],
@@ -43,38 +50,31 @@ export function createRedialMainMiddleware(
       disposables.set("syncStateRequest", handleSyncStateRequests(api));
     }
 
+    // Forward actions to the renderer process:
     return (next) => (action) => {
-      if (action?.type === undefined) {
-        return next(action);
-      }
-
-      if (action.meta?.redial?.forwarded) {
-        return next(action);
-      }
-
-      action.meta = { ...action.meta, redial: { forwarded: true } };
-
-      for (const contentWindow of webContents.getAllWebContents()) {
-        action = beforeSend(action as AnyAction);
-
-        contentWindow.send(IpcChannel.FromMain, action);
-
-        action = afterSend(action as AnyAction);
-      }
-
-      return next(action);
+      return forwarder(next, action, (redialAction) => {
+        for (const contentWindow of webContents.getAllWebContents()) {
+          contentWindow.send(IpcChannel.FromMain, redialAction);
+        }
+      });
     };
   };
 
-  return Object.assign(middleware, {
-    dispose() {
-      for (const disposable of disposables.values()) {
-        disposable?.dispose();
-      }
-    },
-  });
+  const dispose = (): void => {
+    for (const disposable of disposables.values()) {
+      disposable?.dispose();
+    }
+  };
+
+  return Object.assign(middleware, { dispose });
 }
 
+/**
+ * Adds a listener to dispatch an action forwarded from the renderer process.
+ * Returns a disposable that can be called via the `dispose` method of the middleware.
+ *
+ * @internal
+ */
 function handleForwardedAction(api: MiddlewareAPI): IDisposable {
   const handleAction = (event: IpcMainEvent, action: Action): void => {
     api.dispatch(action);
@@ -89,6 +89,13 @@ function handleForwardedAction(api: MiddlewareAPI): IDisposable {
   };
 }
 
+/**
+ * Adds a handler that asynchronously returns the current state to the renderer
+ * process when invoked. Returns a disposable that can be called via the `dispose`
+ * method of the middleware.
+ *
+ * @internal
+ */
 function handleAsyncStateRequests(api: MiddlewareAPI): IDisposable {
   const handleAsyncRequest = (): void => {
     return api.getState();
@@ -103,6 +110,13 @@ function handleAsyncStateRequests(api: MiddlewareAPI): IDisposable {
   };
 }
 
+/**
+ * Adds a listener that synchronously returns the current state to the renderer
+ * process when requested. Returns a disposable that can be called via the
+ * `dispose` method of the middleware.
+ *
+ * @internal
+ */
 function handleSyncStateRequests(api: MiddlewareAPI): IDisposable {
   const handleSyncRequest = (event: IpcMainEvent): void => {
     event.returnValue = api.getState();
