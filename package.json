@@ -2,6 +2,12 @@
   "name": "@laserware/redial",
   "version": "3.0.0-beta.2",
   "description": "Redux IPC abstraction layer.",
+  "author": "Mike Rourke <mike.w.rourke@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "url": "git+https://github.com/laserware/redial.git",
+    "type": "git"
+  },
   "type": "module",
   "exports": {
     "./main": {
@@ -15,12 +21,6 @@
       "require": "./dist/renderer.cjs"
     }
   },
-  "repository": {
-    "url": "git+https://github.com/laserware/redial.git",
-    "type": "git"
-  },
-  "author": "Mike Rourke <mike.w.rourke@gmail.com>",
-  "license": "MIT",
   "files": [
     "dist",
     "main.d.ts",
@@ -34,6 +34,7 @@
   "publishConfig": {
     "access": "public"
   },
+  "sideEffects": false,
   "scripts": {
     "build": "tsup && cd dist && npx prettier --write .",
     "prepublishOnly": "npm run build",
