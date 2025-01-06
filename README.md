@@ -1,4 +1,4 @@
-# @laserware/redial
+# Redial
 
 Redux IPC abstraction layer that uses middleware to forward actions between the main and renderer processes.
 
