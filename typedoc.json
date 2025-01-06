@@ -1,13 +1,17 @@
 {
   "cleanOutputDir": true,
-  "customCss": "./docs/theme.css",
-  "entryPoints": ["./src/index.ts"],
+  "entryPoints": [
+    "./src/main/index.ts",
+    "./src/renderer/index.ts",
+    "./src/types.ts"
+  ],
   "exclude": ["**/**test.ts"],
   "excludeInternal": true,
   "excludeNotDocumented": true,
   "externalSymbolLinkMappings": {
     "redux": {
       "Middleware": "https://redux.js.org/api/applymiddleware#overview",
+      "MiddlewareAPI": "https://redux.js.org/api/applymiddleware#overview",
       "State": "https://redux.js.org/tutorials/essentials/part-1-overview-concepts#state-management",
       "Store": "https://redux.js.org/api/store",
       "UnknownAction": "https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow#actions"
@@ -22,11 +26,12 @@
     "compactFolders": true,
     "excludeReferences": true,
     "includeCategories": true,
-    "includeFolders": true,
+    "includeFolders": false,
     "includeGroups": false
   },
   "markdownLinkExternal": true,
-  "navigationLinks": { "GitHub": "https://github.com/laserware/sword" },
+  "navigationLinks": { "GitHub": "https://github.com/laserware/redial" },
   "out": "site",
-  "readme": "./README.md"
+  "readme": "./README.md",
+  "useFirstParagraphOfCommentAsSummary": true
 }
