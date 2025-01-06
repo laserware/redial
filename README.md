@@ -69,3 +69,22 @@ export function createStore(): Store {
   });
 }
 ```
+
+## Migrating from v2 to v3
+
+The API was completely changed in version 3 to use a single middleware import with methods, rather than returning the store from an initializer function (`withRedial`).
+
+If you want to request the current state from the main process, the return value of `createRedialRendererMiddleware` provides two methods:
+
+1. `getMainState`, which is asynchronous
+2. `getMainStateSync`, which is synchronous (and blocking!)
+
+```ts
+export function createStore() {
+  const redialMiddleware = createRedialRendererMiddleware();
+
+  const stateFromMain = redialMiddleware.getMainSTateSync();
+}
+```
+
+In the main process, listeners are automatically added to return the state when requested.
