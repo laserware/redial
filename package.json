@@ -1,6 +1,6 @@
 {
   "name": "@laserware/redial",
-  "version": "3.0.0-beta.3",
+  "version": "3.0.0",
   "description": "Redux IPC abstraction layer.",
   "author": "Mike Rourke <mike.w.rourke@gmail.com>",
   "license": "MIT",
