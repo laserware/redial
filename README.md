@@ -83,7 +83,7 @@ If you want to request the current state from the main process, the return value
 export function createStore() {
   const redialMiddleware = createRedialRendererMiddleware();
 
-  const stateFromMain = redialMiddleware.getMainSTateSync();
+  const stateFromMain = redialMiddleware.getMainStateSync();
 }
 ```
 
