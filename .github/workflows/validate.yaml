@@ -1,7 +1,5 @@
 name: Validate
 on: [push]
-env:
-  CI: true
 
 jobs:
   check:
