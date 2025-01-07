@@ -1,81 +1,54 @@
-import type { EventEmitter } from "node:events";
+import { type Mock, describe, expect, it, mock } from "bun:test";
+import { EventEmitter } from "node:events";
 
 import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
-import { ipcMain } from "electron";
-// eslint-disable-next-line no-restricted-imports
-import type { Mock } from "vitest";
 
 import { IpcChannel, type RedialAction } from "../../types.js";
-
-import { createRedialMainMiddleware } from "../createMainMiddleware.js";
 
 type State = { counter: { value: number } };
 
 interface Mocks {
   emitter: EventEmitter;
   states: State[];
-  listeners: Map<string, Mock>;
-  send: Mock;
+  listeners: Map<string, any>;
+  send: Mock<any>;
 }
 
-const mocks = vi.hoisted<Mocks>(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const EventEmitter = require("node:events");
-
-  return {
-    emitter: new EventEmitter(),
-    states: [],
-    listeners: new Map(),
-    send: vi.fn(),
-  };
-});
-
-vi.mock("electron", () => {
+const getElectronMock = (mocks: Mocks) => {
   const emitter = mocks.emitter;
 
-  const webContentsInstance = {
-    id: 0,
-    send: mocks.send,
-  };
+  const webContentsInstance = { id: 0, send: mocks.send };
 
   return {
     ipcMain: {
-      addListener: vi.fn((channel: string, listener: any) => {
-        const listenerMock = vi.fn(listener);
-
+      addListener: mock((channel: string, listener: any) => {
+        const listenerMock = mock(listener);
         mocks.listeners.set(channel, listenerMock);
-
         emitter.addListener(channel, listenerMock);
-        return vi.fn().mockReturnThis();
+        return mock().mockReturnThis();
       }),
-      removeListener: vi.fn((channel: string, listener: any) => {
+      removeListener: mock((channel: string, listener: any) => {
         mocks.listeners.delete(channel);
-
         emitter.removeListener(channel, listener);
-        return vi.fn().mockReturnThis();
+        return mock().mockReturnThis();
       }),
-      removeHandler: vi.fn((channel: string) => {
+      removeHandler: mock((channel: string) => {
         mocks.listeners.delete(channel);
-
         emitter.removeAllListeners(channel);
-        return vi.fn().mockReturnThis();
+        return mock().mockReturnThis();
       }),
-      emit: (channel: string, action: any) => {
-        return emitter.emit(channel, {}, action);
-      },
-      handle: vi.fn((channel: string, listener: any) => {
-        const listenerHook = vi.fn((): void => {
+      emit: (channel: string, action?: any) => emitter.emit(channel, {}, action),
+      handle: mock((channel: string, listener: any) => {
+        const listenerHook = mock((): void => {
           mocks.states.push(listener());
         });
-
         mocks.listeners.set(channel, listenerHook);
-
         emitter.addListener(channel, listenerHook);
-        return vi.fn().mockReturnThis();
+        return mock().mockReturnThis();
       }),
-      once: vi.fn((channel: string, listener: any) => {
+      once: mock((channel: string, listener: any) => {
         emitter.once(channel, listener);
-        return vi.fn().mockReturnThis();
+        return mock().mockReturnThis();
       }),
     },
     webContents: {
@@ -84,7 +57,7 @@ vi.mock("electron", () => {
       },
     },
   };
-});
+};
 
 const counterSlice = createSlice({
   name: "counter",
@@ -105,20 +78,28 @@ const counterSlice = createSlice({
 });
 
 describe("the createRedialMainMiddleware function", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("gets middleware that forwards actions to the renderer process with hooks", () => {
+  it("gets middleware that forwards actions to the renderer process with hooks", async () => {
     const COUNTER_INITIAL_VALUE = 10;
 
-    const beforeSend = vi.fn((action: any) => action);
-    const afterSend = vi.fn((action: any) => action);
-    const next = vi.fn((action: any) => action);
+    const mocks: Mocks = {
+      emitter: new EventEmitter(),
+      states: [],
+      listeners: new Map(),
+      send: mock(),
+    };
+
+    const { ipcMain, webContents } = getElectronMock(mocks);
+    mock.module("electron", () => ({ ipcMain, webContents }));
+
+    const { createRedialMainMiddleware } = await import("../createMainMiddleware.js");
+
+    const beforeSend = mock((action: any) => action);
+    const afterSend = mock((action: any) => action);
+    const next = mock((action: any) => action);
 
     const redialMiddleware = createRedialMainMiddleware({ beforeSend, afterSend });
 
-    const store = configureStore({
+    const store = configureStore<State, any, any>({
       preloadedState: { counter: { value: COUNTER_INITIAL_VALUE } },
       reducer: combineReducers({ counter: counterSlice.reducer }),
       middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(redialMiddleware),
@@ -128,7 +109,6 @@ describe("the createRedialMainMiddleware function", () => {
     expect(ipcMain.addListener).toHaveBeenCalledWith(IpcChannel.FromRenderer, anyFunc);
     expect(ipcMain.handle).toHaveBeenCalledWith(IpcChannel.ForStateAsync, anyFunc);
     expect(ipcMain.addListener).toHaveBeenCalledWith(IpcChannel.ForStateSync, anyFunc);
-
     expect(redialMiddleware(store)(next)(undefined)).toBeUndefined();
 
     next.mockClear();
@@ -143,8 +123,10 @@ describe("the createRedialMainMiddleware function", () => {
 
     const incrementAction = counterSlice.actions.increment();
     const result = redialMiddleware(store)(next)(incrementAction) as RedialAction;
+
     expect(result.meta.redial).toEqual({ forwarded: true });
     expect(beforeSend).toHaveBeenCalledWith(result);
+
     expect(afterSend).toHaveBeenCalledWith(result);
     expect(mocks.send).toHaveBeenCalledWith(IpcChannel.FromMain, result);
 
@@ -178,19 +160,28 @@ describe("the createRedialMainMiddleware function", () => {
     unsubscribe();
   });
 
-  it("gets middleware that forwards actions to the renderer process without hooks", () => {
-    const next = vi.fn((action: any) => action);
+  it("gets middleware that forwards actions to the renderer process without hooks", async () => {
+    const mocks: Mocks = {
+      emitter: new EventEmitter(),
+      states: [],
+      listeners: new Map(),
+      send: mock(),
+    };
+
+    const electron = getElectronMock(mocks);
+    mock.module("electron", () => electron);
+
+    const { createRedialMainMiddleware } = await import("../createMainMiddleware.js");
+
+    const next = mock((action: any) => action);
 
     const middleware = createRedialMainMiddleware();
 
-    const store = configureStore({
-      reducer: combineReducers({
-        counter: counterSlice.reducer,
-      }),
-    });
+    const store = configureStore({ reducer: combineReducers({ counter: counterSlice.reducer }) });
 
     const incrementAction = counterSlice.actions.increment();
     const result = middleware(store)(next)(incrementAction) as RedialAction;
+
     expect(result.meta.redial).toEqual({ forwarded: true });
     expect(mocks.send).toHaveBeenCalledWith(IpcChannel.FromMain, result);
   });

@@ -1,3 +1,4 @@
+import { type Mock, describe, expect, it, mock } from "bun:test";
 import { EventEmitter } from "node:events";
 
 import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
@@ -5,8 +6,8 @@ import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
 import { IpcChannel, type RedialAction } from "../../types.js";
 
 import {
-  createRedialRendererMiddleware,
   type IpcRendererMethods,
+  createRedialRendererMiddleware,
 } from "../createRendererMiddleware.js";
 
 const counterSlice = createSlice({
@@ -27,23 +28,23 @@ const counterSlice = createSlice({
   },
 });
 
-function getIpcRenderer(): IpcRendererMethods {
+function getIpcRenderer(): Record<keyof IpcRendererMethods, Mock<any>> {
   const emitter = new EventEmitter();
 
   return {
-    addListener: vi.fn((channel: string, listener: any): any => {
+    addListener: mock((channel: string, listener: any): any => {
       emitter.addListener(channel, listener);
-      return vi.fn().mockReturnThis();
+      return mock().mockReturnThis();
     }),
-    removeListener: vi.fn((channel: string, listener: any): any => {
+    removeListener: mock((channel: string, listener: any): any => {
       emitter.removeListener(channel, listener);
-      return vi.fn().mockReturnThis();
+      return mock().mockReturnThis();
     }),
-    sendSync: vi.fn(),
-    send: vi.fn((channel: string, action: any) => {
+    sendSync: mock(),
+    send: mock((channel: string, action: any) => {
       emitter.emit(channel, {}, action);
     }),
-    invoke: vi.fn(() => Promise.resolve()),
+    invoke: mock(() => Promise.resolve()),
   };
 }
 
@@ -51,13 +52,13 @@ describe("the createRedialRendererMiddleware function", () => {
   it("creates middleware that forwards actions to the main process with hooks", () => {
     const COUNTER_INITIAL_VALUE = 10;
 
-    const beforeSend = vi.fn((action: any) => action);
-    const afterSend = vi.fn((action: any) => action);
-    const next = vi.fn((action: any) => action);
+    const beforeSend = mock((action: any) => action);
+    const afterSend = mock((action: any) => action);
+    const next = mock((action: any) => action);
 
     const ipcRenderer = getIpcRenderer();
 
-    vi.mocked(ipcRenderer.sendSync).mockReturnValueOnce({
+    ipcRenderer.sendSync.mockReturnValueOnce({
       counter: { value: COUNTER_INITIAL_VALUE },
     });
 
@@ -124,7 +125,7 @@ describe("the createRedialRendererMiddleware function", () => {
   it("creates middleware that forwards actions to the main process without hooks", () => {
     const ipcRenderer = getIpcRenderer();
 
-    const next = vi.fn((action: any) => action);
+    const next = mock((action: any) => action);
 
     const redialMiddleware = createRedialRendererMiddleware(ipcRenderer);
 
@@ -150,8 +151,8 @@ describe("the createRedialRendererMiddleware function", () => {
 
     const expected = store.getState();
 
-    vi.mocked(ipcRenderer.invoke).mockResolvedValueOnce(expected);
-    vi.mocked(ipcRenderer.sendSync).mockReturnValueOnce(expected);
+    ipcRenderer.invoke.mockResolvedValueOnce(expected);
+    ipcRenderer.sendSync.mockReturnValueOnce(expected);
 
     expect(await redialMiddleware.getMainState()).toEqual(expected);
     expect(redialMiddleware.getMainStateSync()).toEqual(expected);
