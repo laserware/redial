@@ -1,13 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "composite": true,
     "declaration": true,
     "declarationMap": false,
-    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "importHelpers": true,
     "lib": ["DOM", "ESNext"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -20,10 +16,8 @@
     "strict": true,
     "strictNullChecks": true,
     "target": "ESNext",
-    "types": ["vitest/globals"],
     "verbatimModuleSyntax": true
   },
   "include": ["src", "./main.d.ts", "./renderer.d.ts"],
-  "exclude": ["dist", "node_modules"],
-  "references": [{ "path": "./tsconfig.eslint.json" }]
+  "exclude": ["dist", "node_modules"]
 }

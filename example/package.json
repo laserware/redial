@@ -9,9 +9,9 @@
     "build:main:development": "vite build --mode @main/development",
     "build:main:production": "vite build --mode @main/production",
     "start:main": "electron .",
-    "build": "npm run build:main:production && npm run build:renderer",
-    "start:watch": "npm run build:main:development && concurrently --kill-others \"npm run start:main\" \"npm run start:renderer\"",
-    "start": "npm run build && npm run start:main"
+    "build": "bun run build:main:production && bun run build:renderer",
+    "start:watch": "bun run build:main:development && concurrently --kill-others \"bun run start:main\" \"bun run start:renderer\"",
+    "start": "bun run build && bun run start:main"
   },
   "author": "Mike Rourke <mike.w.rourke@gmail.com>",
   "license": "MIT",
@@ -22,5 +22,9 @@
     "concurrently": "^9.1.1",
     "electron": "^33.2.1",
     "vite": "^6.0.6"
-  }
+  },
+  "trustedDependencies": [
+    "electron",
+    "esbuild"
+  ]
 }
