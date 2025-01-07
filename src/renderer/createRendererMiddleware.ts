@@ -3,9 +3,9 @@ import type { IpcRenderer, IpcRendererEvent } from "electron";
 
 import { getMiddlewareForwarder } from "../internal.js";
 import {
-  IpcChannel,
   type AnyState,
   type IDisposable,
+  IpcChannel,
   type RedialMiddlewareHooks,
 } from "../types.js";
 

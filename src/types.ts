@@ -26,6 +26,7 @@ export type AnyState = Record<string, any>;
  *
  * @internal
  */
+// biome-ignore lint/suspicious/noConstEnum: These are swapped out for their value in the build process.
 export const enum IpcChannel {
   FromMain = "@laserware/redial/from-main",
   FromRenderer = "@laserware/redial/from-renderer",

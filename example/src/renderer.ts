@@ -1,5 +1,5 @@
 import { createElement as html } from "@laserware/dominator";
-import { combineReducers, configureStore, type Store } from "@reduxjs/toolkit";
+import { type Store, combineReducers, configureStore } from "@reduxjs/toolkit";
 
 import { createRedialRendererMiddleware } from "../../src/renderer";
 
