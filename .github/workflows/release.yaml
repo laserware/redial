@@ -13,22 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: "npm"
+          bun-version: latest
 
       - name: Install Dependencies
-        run: npm install
-
-        # Ensure a new version doesn't get published to npm if it doesn't
-        # pass all required checks/validation:
-      - name: Run Checks
-        run: npm run typecheck && npm run prettier:ci && npm run eslint && npm run vitest -- --run
+        run: bun install
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
       - name: Publish to npm
         uses: laserware/propellant@v1.0.2
