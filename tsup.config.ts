@@ -1,6 +1,6 @@
 import { builtinModules } from "node:module";
 
-import { defineConfig, Options } from "tsup";
+import { type Options, defineConfig } from "tsup";
 
 export default defineConfig(() => {
   const commonOptions: Options = {

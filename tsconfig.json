@@ -18,6 +18,6 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true
   },
-  "include": ["src", "./main.d.ts", "./renderer.d.ts"],
+  "include": ["src", "./main.d.ts", "./renderer.d.ts", "./tsup.config.ts"],
   "exclude": ["dist", "node_modules"]
 }

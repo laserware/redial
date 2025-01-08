@@ -12,16 +12,9 @@
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
-    "lineWidth": 80
+    "lineWidth": 80,
+    "ignore": ["./package.json"]
   },
-  "overrides": [
-    {
-      "include": ["src/**/*.test.ts"],
-      "formatter": {
-        "lineWidth": 100
-      }
-    }
-  ],
   "organizeImports": {
     "enabled": true
   },
@@ -43,5 +36,21 @@
     "formatter": {
       "quoteStyle": "double"
     }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["src/**/*.test.ts"],
+      "formatter": {
+        "lineWidth": 100
+      },
+      "linter": {
+        "rules": {
+          "recommended": true,
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    }
+  ]
 }

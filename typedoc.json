@@ -1,4 +1,5 @@
 {
+  "$schema": "https://typedoc.org/schema.json",
   "cleanOutputDir": true,
   "entryPoints": [
     "./src/main/index.ts",

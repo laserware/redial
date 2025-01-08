@@ -2,12 +2,13 @@
   "name": "@laserware/redial",
   "version": "3.0.2",
   "description": "Redux IPC abstraction layer.",
-  "author": "Mike Rourke <mike.w.rourke@gmail.com>",
+  "author": "Mike Rourke <mike.w.rourke@gmail.com> (https://mikerourke.dev/)",
   "license": "MIT",
   "repository": {
     "url": "git+https://github.com/laserware/redial.git",
     "type": "git"
   },
+  "homepage": "https://laserware.github.io/redial/",
   "type": "module",
   "exports": {
     "./main": {
@@ -60,12 +61,20 @@
     "typescript": "^5.7.2"
   },
   "peerDependencies": {
-    "electron": "*",
-    "typescript": ">=5"
-  },
-  "optionalDependencies": {
     "@laserware/stasis": ">=4",
-    "@reduxjs/toolkit": ">=2"
+    "@reduxjs/toolkit": ">=2",
+    "electron": "*"
+  },
+  "peerDependenciesMeta": {
+    "@laserware/stasis": {
+      "optional": true
+    },
+    "@reduxjs/toolkit": {
+      "optional": true
+    },
+    "electron": {
+      "optional": false
+    }
   },
   "trustedDependencies": [
     "@biomejs/biome",
