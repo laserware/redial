@@ -20,46 +20,42 @@ export default defineConfig(() => {
     tsconfig: "./tsconfig.build.json",
   };
 
+  type Platform = Options["platform"];
+
+  const cjs = (
+    processName: "main" | "preload" | "renderer",
+    platform: Platform,
+  ) => ({
+    ...commonOptions,
+    name: `${processName} (CJS)`,
+    dts: false,
+    entry: { [processName]: `src/${processName}/index.ts` },
+    format: "cjs",
+    outExtension: () => ({ js: ".cjs" }),
+    platform,
+  });
+
+  const esm = (
+    processName: "main" | "preload" | "renderer",
+    platform: Platform,
+  ) => ({
+    ...commonOptions,
+    name: `${processName} (ESM)`,
+    dts: true,
+    entry: { [processName]: `src/${processName}/index.ts` },
+    format: "esm",
+    outExtension: () => ({ js: ".mjs" }),
+    platform,
+    target: "esnext",
+    treeshake: true,
+  });
+
   return [
-    {
-      ...commonOptions,
-      name: "Renderer (MJS)",
-      dts: true,
-      entry: { renderer: "src/renderer/index.ts" },
-      format: "esm",
-      outExtension: () => ({ js: ".mjs" }),
-      platform: "browser",
-      target: "esnext",
-      treeshake: true,
-    },
-    {
-      ...commonOptions,
-      name: "Renderer (CJS)",
-      dts: false,
-      entry: { renderer: "src/renderer/index.ts" },
-      format: "cjs",
-      outExtension: () => ({ js: ".cjs" }),
-      platform: "browser",
-    },
-    {
-      ...commonOptions,
-      name: "Main (ESM)",
-      dts: true,
-      entry: { main: "src/main/index.ts" },
-      format: "esm",
-      outExtension: () => ({ js: ".mjs" }),
-      platform: "node",
-      target: "esnext",
-      treeshake: true,
-    },
-    {
-      ...commonOptions,
-      name: "Main (CJS)",
-      dts: false,
-      entry: { main: "src/main/index.ts" },
-      format: "cjs",
-      outExtension: () => ({ js: ".cjs" }),
-      platform: "node",
-    },
+    esm("main", "node"),
+    esm("preload", "node"),
+    esm("renderer", "browser"),
+    cjs("main", "node"),
+    cjs("preload", "node"),
+    cjs("renderer", "browser"),
   ] as Options[];
 });

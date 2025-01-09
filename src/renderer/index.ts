@@ -9,9 +9,6 @@
  *
  * import { rootReducer } from "../common/rootReducer";
  *
- * // Assuming no context isolation:
- * const ipcRenderer = window.require("electron").ipcRenderer;
- *
  * export function createStore(): Store {
  *   const redialMiddleware = createRedialRendererMiddleware();
  *
@@ -35,6 +32,5 @@
 
 export {
   createRedialRendererMiddleware,
-  type IpcRendererMethods,
   type RedialRendererMiddleware,
 } from "./createRendererMiddleware.js";

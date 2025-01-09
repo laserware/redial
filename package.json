@@ -16,6 +16,11 @@
       "import": "./dist/main.mjs",
       "require": "./dist/main.cjs"
     },
+    "./preload": {
+      "types": "./dist/preload.d.ts",
+      "import": "./dist/preload.mjs",
+      "require": "./dist/preload.cjs"
+    },
     "./renderer": {
       "types": "./dist/renderer.d.ts",
       "import": "./dist/renderer.mjs",
