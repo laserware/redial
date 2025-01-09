@@ -10,20 +10,44 @@ Redux IPC abstraction layer that uses middleware to forward actions between the 
 
 ## Usage
 
-You'll need to set up the middleware in the main and renderer processes.
+Getting the library working is a three-step process:
 
-### Usage in the Main Process
+1. Set up the communication layer in a `preload` script.
+2. Add Redial middleware to the Redux store in the **main** process
+3. Add Redial middleware to the Redux store in the **renderer** process
+
+### Step 1: Expose Redial API in Preload Script
+
+> [!NOTE]
+> The preload step was added to v4 to ensure the library is adhering to recommended
+> [security practices](https://www.electronjs.org/docs/latest/tutorial/context-isolation#security-considerations)
+> when using the `ipcRenderer` API.
+
+Call the `exposeRedialInMainWorld` function in a preload script.
+
+```js
+/** src/preload.js */
+
+import { exposeRedialInMainWorld } from "@laserware/redial/preload";
+
+// Set up the communication layer between the main and renderer processes:
+exposeRedialInMainWorld();
+```
+
+### Step 2: Add Redial Middleware to Main Process Redux Store
 
 Call the `createRedialMainMiddleware` function in your Redux store configuration code in the main process.
 
 ```ts
+/** src/main.ts */
+
 import { createRedialMainMiddleware } from "@laserware/redial/main";
 import { configureStore, type Store } from "@reduxjs/toolkit";
-import { app } from "electron";
+import { app, BrowserWindow } from "electron";
 
 import { rootReducer } from "../common/rootReducer";
 
-export function createStore(): Store {
+function createStore(): Store {
   const redialMiddleware = createRedialMainMiddleware();
 
   const store = configureStore({
@@ -37,20 +61,40 @@ export function createStore(): Store {
     redialMiddleware.dispose();
   });
 }
+
+function createWindow(): void {
+  const mainWindow = new BrowserWindow({
+    webPreferences: {
+      contextIsolation: true,
+      // Assuming the preload script is in the same directory 
+      // as the `main` file output:
+      preload: join(__dirname, "preload.js"),
+    },
+  });
+}
+
+async function start(): Promise<void> {
+  await app.whenReady();
+  
+  createStore();
+  
+  createWindow();
+}
+
+start();
 ```
 
-### Usage in the Renderer Process
+### Step 3: Add Redial Middleware to Renderer Process Redux Store
 
 Call the `createRedialRendererMiddleware` in your Redux store configuration code in the renderer process.
 
 ```ts
+/** src/renderer.ts */
+
 import { createRedialRendererMiddleware } from "@laserware/redial/renderer";
 import { configureStore, type Store } from "@reduxjs/toolkit";
 
 import { rootReducer } from "../common/rootReducer";
-
-// Assuming no context isolation:
-const ipcRenderer = window.require("electron").ipcRenderer;
 
 export function createStore(): Store {
   const redialMiddleware = createRedialRendererMiddleware();
@@ -88,3 +132,11 @@ export function createStore() {
 ```
 
 In the main process, listeners are automatically added to return the state when requested.
+
+## Migrating from v3 to v4
+
+The preload step was added in version 4 to adhere to recommended security practices when using the `ipcRenderer` API.
+
+You must now call `exposeRedialInMainWorld` in a preload script and load that script when creating a `BrowserWindow`.
+
+See the [Usage](#usage) instructions above for additional information.

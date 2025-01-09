@@ -6,15 +6,15 @@ import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
 import { IpcChannel, type RedialAction } from "../../types.js";
 
 import {
-  type IpcRendererMethods,
-  createRedialRendererMiddleware,
-} from "../createRendererMiddleware.js";
+  type RedialMainActionListener,
+  type RedialMainWorldApi,
+  redialMainWorldApiKey,
+} from "../../internal.js";
+import { createRedialRendererMiddleware } from "../createRendererMiddleware.js";
 
 const counterSlice = createSlice({
   name: "counter",
-  initialState: {
-    value: 0,
-  },
+  initialState: { value: 0 },
   reducers: {
     decrement(state) {
       state.value -= 1;
@@ -28,23 +28,24 @@ const counterSlice = createSlice({
   },
 });
 
-function getIpcRenderer(): Record<keyof IpcRendererMethods, Mock<any>> {
-  const emitter = new EventEmitter();
-
+function getRedialMainWorldApi(
+  emitter: EventEmitter = new EventEmitter(),
+): Record<keyof RedialMainWorldApi, Mock<any>> {
   return {
-    addListener: mock((channel: string, listener: any): any => {
-      emitter.addListener(channel, listener);
+    forwardActionToMain: mock((action: RedialAction): any => {
+      emitter.emit(IpcChannel.FromRenderer, {}, action);
       return mock().mockReturnThis();
     }),
-    removeListener: mock((channel: string, listener: any): any => {
-      emitter.removeListener(channel, listener);
+    addMainActionListener: mock((listener: RedialMainActionListener): any => {
+      emitter.addListener(IpcChannel.FromMain, listener);
       return mock().mockReturnThis();
     }),
-    sendSync: mock(),
-    send: mock((channel: string, action: any) => {
-      emitter.emit(channel, {}, action);
+    removeMainActionListener: mock((listener: RedialMainActionListener): any => {
+      emitter.removeListener(IpcChannel.FromMain, listener);
+      return mock().mockReturnThis();
     }),
-    invoke: mock(() => Promise.resolve()),
+    requestMainStateSync: mock(),
+    requestMainStateAsync: mock(() => Promise.resolve()),
   };
 }
 
@@ -56,17 +57,21 @@ describe("the createRedialRendererMiddleware function", () => {
     const afterSend = mock((action: any) => action);
     const next = mock((action: any) => action);
 
-    const ipcRenderer = getIpcRenderer();
+    const emitter = new EventEmitter();
 
-    ipcRenderer.sendSync.mockReturnValueOnce({
+    globalThis[redialMainWorldApiKey] = getRedialMainWorldApi(emitter);
+
+    const globalMainWorldApi = globalThis[redialMainWorldApiKey];
+
+    globalMainWorldApi.requestMainStateSync.mockReturnValueOnce({
       counter: { value: COUNTER_INITIAL_VALUE },
     });
 
-    const redialMiddleware = createRedialRendererMiddleware(ipcRenderer, { beforeSend, afterSend });
+    const redialMiddleware = createRedialRendererMiddleware({ beforeSend, afterSend });
 
     const preloadedState = redialMiddleware.getMainStateSync();
 
-    expect(ipcRenderer.sendSync).toHaveBeenCalledWith(IpcChannel.ForStateSync);
+    expect(globalMainWorldApi.requestMainStateSync).toHaveBeenCalled();
 
     const store = configureStore({
       preloadedState,
@@ -75,7 +80,7 @@ describe("the createRedialRendererMiddleware function", () => {
     });
 
     const anyFunc = expect.any(Function);
-    expect(ipcRenderer.addListener).toHaveBeenCalledWith(IpcChannel.FromMain, anyFunc);
+    expect(globalMainWorldApi.addMainActionListener).toHaveBeenCalledWith(anyFunc);
 
     expect(redialMiddleware(store)(next)(undefined)).toBeUndefined();
 
@@ -109,25 +114,23 @@ describe("the createRedialRendererMiddleware function", () => {
     });
 
     let expected = COUNTER_INITIAL_VALUE - 1;
-    ipcRenderer.send(IpcChannel.FromMain, counterSlice.actions.decrement());
+    emitter.emit(IpcChannel.FromMain, {}, counterSlice.actions.decrement());
     expect(stateChanges.pop()!.counter.value).toBe(expected);
 
     expected = COUNTER_INITIAL_VALUE;
-    ipcRenderer.send(IpcChannel.FromMain, counterSlice.actions.increment());
+    emitter.emit(IpcChannel.FromMain, {}, counterSlice.actions.increment());
     expect(stateChanges.pop()!.counter.value).toBe(expected);
 
     redialMiddleware.dispose();
-    expect(ipcRenderer.removeListener).toHaveBeenCalled();
+    expect(globalMainWorldApi.removeMainActionListener).toHaveBeenCalled();
 
     unsubscribe();
   });
 
   it("creates middleware that forwards actions to the main process without hooks", () => {
-    const ipcRenderer = getIpcRenderer();
-
     const next = mock((action: any) => action);
 
-    const redialMiddleware = createRedialRendererMiddleware(ipcRenderer);
+    const redialMiddleware = createRedialRendererMiddleware();
 
     const store = configureStore({
       reducer: combineReducers({ counter: counterSlice.reducer }),
@@ -140,9 +143,11 @@ describe("the createRedialRendererMiddleware function", () => {
   });
 
   it("creates middleware with getter functions for main state", async () => {
-    const ipcRenderer = getIpcRenderer();
+    globalThis[redialMainWorldApiKey] = getRedialMainWorldApi();
 
-    const redialMiddleware = createRedialRendererMiddleware(ipcRenderer);
+    const globalMainWorldApi = globalThis[redialMainWorldApiKey];
+
+    const redialMiddleware = createRedialRendererMiddleware();
 
     const store = configureStore({
       reducer: combineReducers({ counter: counterSlice.reducer }),
@@ -151,10 +156,18 @@ describe("the createRedialRendererMiddleware function", () => {
 
     const expected = store.getState();
 
-    ipcRenderer.invoke.mockResolvedValueOnce(expected);
-    ipcRenderer.sendSync.mockReturnValueOnce(expected);
+    globalMainWorldApi.requestMainStateAsync.mockResolvedValueOnce(expected);
+    globalMainWorldApi.requestMainStateSync.mockReturnValueOnce(expected);
 
     expect(await redialMiddleware.getMainState()).toEqual(expected);
     expect(redialMiddleware.getMainStateSync()).toEqual(expected);
+  });
+
+  it("throws an error if the preload script wasn't run", () => {
+    globalThis[redialMainWorldApiKey] = undefined;
+
+    expect(() => {
+      createRedialRendererMiddleware();
+    }).toThrow(/Unable to configure middleware/);
   });
 });

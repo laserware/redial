@@ -10,16 +10,14 @@ import classes from "./renderer.module.css";
 declare global {
   interface Window {
     store: Store;
-    require(name: string): any;
+    api: any;
   }
 }
-
-const ipcRenderer = window.require("electron").ipcRenderer;
 
 function createStore(): Store {
   const isDevelopment = /development/gi.test(import.meta.env.MODE);
 
-  const redialMiddleware = createRedialRendererMiddleware(ipcRenderer);
+  const redialMiddleware = createRedialRendererMiddleware();
 
   let preloadedState: any;
 
@@ -37,7 +35,6 @@ function createStore(): Store {
   });
 
   window.addEventListener("beforeunload", () => {
-    console.log("Disposing");
     redialMiddleware.dispose();
   });
 
@@ -69,7 +66,7 @@ function start(): void {
     actionButton("Reset", () => store.dispatch(actions.reset())),
   );
 
-  const sendToMain = (action: any): void => ipcRenderer.send("action", action);
+  const sendToMain = (action: any): void => window.api.sendAction(action);
 
   const mainButtons = html(
     "div",
@@ -96,7 +93,9 @@ function start(): void {
   store.subscribe(() => {
     const value = selectValue(store.getState());
 
-    output!.innerHTML = value.toString();
+    if (output !== null) {
+      output.innerHTML = value.toString();
+    }
   });
 }
 
