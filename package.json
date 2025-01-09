@@ -2,12 +2,13 @@
   "name": "@laserware/redial",
   "version": "3.0.2",
   "description": "Redux IPC abstraction layer.",
-  "author": "Mike Rourke <mike.w.rourke@gmail.com>",
+  "author": "Mike Rourke <mike.w.rourke@gmail.com> (https://mikerourke.dev/)",
   "license": "MIT",
   "repository": {
     "url": "git+https://github.com/laserware/redial.git",
     "type": "git"
   },
+  "homepage": "https://laserware.github.io/redial/",
   "type": "module",
   "exports": {
     "./main": {
@@ -36,53 +37,48 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "tsup && cd dist && npx prettier --write .",
-    "prepublishOnly": "npm run build",
-    "preversion": "npm run eslint && npm run typecheck",
-    "version": "npm run prettier && git add -A src",
+    "build": "tsup",
+    "prepublishOnly": "bun run build",
+    "preversion": "bun run lint && bun run typecheck",
+    "version": "bun run format && git add -A src",
     "postversion": "git push && git push --tags",
+    "ci": "biome ci src",
     "docs:generate": "typedoc  --options typedoc.json",
-    "docs:serve": "mkdir -p ./site && cd ./site && ../node_modules/.bin/vite",
+    "docs:serve": "mkdir -p ./site && cd ./site && bunx vite",
+    "format": "biome check --formatter-enabled=true --linter-enabled=false --organize-imports-enabled=true --write src example/src",
+    "lint": "biome lint src example/src",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "prettier": "prettier --cache --write src example/src",
-    "prettier:ci": "prettier --check src",
-    "eslint": "eslint --cache src tsup.config.ts",
-    "vitest": "vitest",
-    "example": "cd example && npm run start"
+    "example": "cd example && bun run start"
   },
   "devDependencies": {
-    "@laserware/eslint-config": "^5.3.0",
+    "@biomejs/biome": "1.9.4",
     "@reduxjs/toolkit": "^2.5.0",
-    "@vitest/coverage-istanbul": "^2.1.8",
+    "@types/bun": "latest",
     "electron": "^33.2.1",
-    "eslint": "^9.17.0",
-    "prettier": "^3.4.2",
-    "tslib": "^2.8.1",
     "tsup": "^8.3.5",
     "typedoc": "^0.27.6",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "typescript": "^5.7.2"
   },
   "peerDependencies": {
-    "electron": "*",
-    "typescript": ">=5"
-  },
-  "optionalDependencies": {
     "@laserware/stasis": ">=4",
-    "@reduxjs/toolkit": ">=2"
+    "@reduxjs/toolkit": ">=2",
+    "electron": "*"
   },
-  "prettier": {
-    "trailingComma": "all",
-    "overrides": [
-      {
-        "files": [
-          "*.test.ts",
-          "*.e2e.ts"
-        ],
-        "options": {
-          "printWidth": 100
-        }
-      }
-    ]
-  }
+  "peerDependenciesMeta": {
+    "@laserware/stasis": {
+      "optional": true
+    },
+    "@reduxjs/toolkit": {
+      "optional": true
+    },
+    "electron": {
+      "optional": false
+    }
+  },
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "electron",
+    "esbuild"
+  ]
 }

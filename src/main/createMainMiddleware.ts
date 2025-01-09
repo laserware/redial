@@ -1,10 +1,10 @@
 import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
-import { ipcMain, webContents, type IpcMainEvent } from "electron";
+import { type IpcMainEvent, ipcMain, webContents } from "electron";
 
 import { getMiddlewareForwarder } from "../internal.js";
 import {
-  IpcChannel,
   type IDisposable,
+  IpcChannel,
   type RedialMiddlewareHooks,
 } from "../types.js";
 
@@ -119,7 +119,7 @@ function handleForwardedAction(api: MiddlewareAPI): IDisposable {
  * @internal
  */
 function handleAsyncStateRequests(api: MiddlewareAPI): IDisposable {
-  const handleAsyncRequest = (): void => {
+  const handleAsyncRequest = <S>(): S => {
     return api.getState();
   };
 

@@ -1,5 +1,5 @@
-import { combineReducers, configureStore, type Store } from "@reduxjs/toolkit";
-import { app, BrowserWindow, ipcMain } from "electron";
+import { type Store, combineReducers, configureStore } from "@reduxjs/toolkit";
+import { BrowserWindow, app, ipcMain } from "electron";
 
 import { createRedialMainMiddleware } from "../../src/main";
 
