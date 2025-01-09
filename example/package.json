@@ -8,7 +8,7 @@
     "start:renderer": "vite serve --mode @renderer/development",
     "build:main:development": "vite build --mode @main/development",
     "build:main:production": "vite build --mode @main/production",
-    "start:main": "electron .",
+    "start:main": "electron . 2>/dev/null",
     "build": "bun run build:main:production && bun run build:renderer",
     "start:watch": "bun run build:main:development && concurrently --kill-others \"bun run start:main\" \"bun run start:renderer\"",
     "start": "bun run build && bun run start:main"
