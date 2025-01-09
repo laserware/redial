@@ -1,3 +1,5 @@
+import { join } from "node:path";
+
 import { type Store, combineReducers, configureStore } from "@reduxjs/toolkit";
 import { BrowserWindow, app, ipcMain } from "electron";
 
@@ -53,8 +55,9 @@ function createWindow(): void {
     width: 800,
     height: 600,
     webPreferences: {
-      contextIsolation: false,
-      nodeIntegration: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: join(__dirname, "..", "preload", "preload.js"),
     },
   });
 

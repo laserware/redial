@@ -70,5 +70,21 @@ export default defineConfig(({ mode }) => {
     );
   }
 
+  if (processName === "preload") {
+    return mergeConfig(
+      commonOptions,
+      {
+        build: {
+          outDir: join("dist", "preload"),
+          lib: {
+            entry: join("src", "preload.ts"),
+            formats: ["cjs"],
+          },
+        },
+      },
+      false,
+    );
+  }
+
   throw new Error(`Invalid process name ${processName}`);
 });
