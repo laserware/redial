@@ -28,7 +28,7 @@ export default defineConfig(() => {
   ) => ({
     ...commonOptions,
     name: `${processName} (CJS)`,
-    dts: false,
+    dts: true,
     entry: { [processName]: `src/${processName}/index.ts` },
     format: "cjs",
     outExtension: () => ({ js: ".cjs" }),

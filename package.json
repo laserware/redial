@@ -12,19 +12,34 @@
   "type": "module",
   "exports": {
     "./main": {
-      "types": "./dist/main.d.ts",
-      "import": "./dist/main.mjs",
-      "require": "./dist/main.cjs"
+      "import": {
+        "types": "./dist/main.d.ts",
+        "default": "./dist/main.mjs"
+      },
+      "require": {
+        "types": "./dist/main.d.cts",
+        "default": "./dist/main.cjs"
+      }
     },
     "./preload": {
-      "types": "./dist/preload.d.ts",
-      "import": "./dist/preload.mjs",
-      "require": "./dist/preload.cjs"
+      "import": {
+        "types": "./dist/preload.d.ts",
+        "default": "./dist/preload.mjs"
+      },
+      "require": {
+        "types": "./dist/preload.d.cts",
+        "default": "./dist/preload.cjs"
+      }
     },
     "./renderer": {
-      "types": "./dist/renderer.d.ts",
-      "import": "./dist/renderer.mjs",
-      "require": "./dist/renderer.cjs"
+      "import": {
+        "types": "./dist/renderer.d.ts",
+        "default": "./dist/renderer.mjs"
+      },
+      "require": {
+        "types": "./dist/renderer.d.cts",
+        "default": "./dist/renderer.cjs"
+      }
     }
   },
   "files": [
@@ -58,12 +73,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@reduxjs/toolkit": "^2.5.0",
+    "@reduxjs/toolkit": "^2.5.1",
     "@types/bun": "latest",
-    "electron": "^33.2.1",
-    "tsup": "^8.3.5",
-    "typedoc": "^0.27.6",
-    "typescript": "^5.7.2"
+    "electron": "^34.2.0",
+    "tsup": "^8.3.6",
+    "typedoc": "^0.27.7",
+    "typescript": "^5.7.3"
   },
   "peerDependencies": {
     "@laserware/stasis": ">=4",
