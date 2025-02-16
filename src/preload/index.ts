@@ -8,9 +8,9 @@
  *
  * ### `preload.js`
  * ```js
- * import { exposeRedialInMainWorld } from "@laserware/redial/preload";
+ * import { preloadRedial } from "@laserware/redial/preload";
  *
- * exposeRedialInMainWorld();
+ * preloadRedial();
  * ```
  *
  * ### `main.js`
@@ -29,4 +29,4 @@
  *
  * @module preload
  */
-export { exposeRedialInMainWorld } from "./exposeRedialInMainWorld.js";
+export { preloadRedial } from "./preload.js";

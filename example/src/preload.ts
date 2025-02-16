@@ -1,9 +1,9 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-import { exposeRedialInMainWorld } from "../../src/preload/exposeRedialInMainWorld.ts";
+import { preloadRedial } from "../../src/preload";
 import type { RedialAction } from "../../src/types.ts";
 
-exposeRedialInMainWorld();
+preloadRedial();
 
 contextBridge.exposeInMainWorld("api", {
   sendAction(action: RedialAction) {

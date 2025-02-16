@@ -17,12 +17,12 @@
   "author": "Mike Rourke <mike.w.rourke@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@laserware/dominator": "^4.0.2"
+    "@laserware/dominator": "^4.2.0"
   },
   "devDependencies": {
-    "concurrently": "^9.1.1",
-    "electron": "^33.2.1",
-    "vite": "^6.0.6"
+    "concurrently": "^9.1.2",
+    "electron": "^34.2.0",
+    "vite": "^6.1.0"
   },
   "trustedDependencies": [
     "electron",

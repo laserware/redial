@@ -6,6 +6,14 @@ import {
 } from "../internal.js";
 import { type AnyState, IpcChannel, type RedialAction } from "../types.js";
 
+export interface RedialGlobals {
+  forwardActionToMain(action: RedialAction): void;
+  addMainActionListener(listener: RedialMainActionListener): void;
+  removeMainActionListener(listener: RedialMainActionListener): void;
+  requestMainStateAsync<S = AnyState>(): Promise<S>;
+  requestMainStateSync<S = AnyState>(): S;
+}
+
 /**
  * Adds an entry to the `window` object that sets up the communication layer
  * between the main and renderer processes. This _must_ be done to ensure the
@@ -18,8 +26,8 @@ import { type AnyState, IpcChannel, type RedialAction } from "../types.js";
  * [security practices](https://www.electronjs.org/docs/latest/tutorial/context-isolation#security-considerations)
  * by not exposing access to the entire `ipcRenderer` API.
  */
-export function exposeRedialInMainWorld(): void {
-  contextBridge.exposeInMainWorld(redialMainWorldApiKey, {
+export function preloadRedial(): void {
+  const globals: RedialGlobals = {
     forwardActionToMain(action: RedialAction): void {
       ipcRenderer.send(IpcChannel.FromRenderer, action);
     },
@@ -35,5 +43,11 @@ export function exposeRedialInMainWorld(): void {
     requestMainStateSync<S = AnyState>(): S {
       return ipcRenderer.sendSync(IpcChannel.ForStateSync);
     },
-  });
+  };
+
+  if (process.contextIsolated) {
+    contextBridge.exposeInMainWorld(redialMainWorldApiKey, globals);
+  } else {
+    window[redialMainWorldApiKey] = globals;
+  }
 }
