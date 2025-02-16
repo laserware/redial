@@ -1,11 +1,8 @@
 import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
 import type { IpcRendererEvent } from "electron";
 
-import {
-  type RedialMainWorldApi,
-  getMiddlewareForwarder,
-  redialMainWorldApiKey,
-} from "../internal.js";
+import { getMiddlewareForwarder } from "../internal.js";
+import { type RedialGlobals, getRedialGlobals } from "../sandbox/globals.js";
 import type { AnyState, IDisposable, RedialMiddlewareHooks } from "../types.js";
 
 /**
@@ -105,30 +102,19 @@ export function createRedialRendererMiddleware(
 ): RedialRendererMiddleware {
   const forwarder = getMiddlewareForwarder(hooks);
 
-  // biome-ignore format:
-  const redialMainWorldApi: RedialMainWorldApi = globalThis[redialMainWorldApiKey];
-
-  if (redialMainWorldApi === undefined) {
-    // biome-ignore format:
-    const message = [
-      "Unable to configure middleware in the renderer process.",
-      "You may have forgotten to call `exposeRedialInMainWorld` in a preload script from the main process.",
-    ].join(" ");
-
-    throw new Error(message);
-  }
+  const globals = getRedialGlobals();
 
   let disposable: IDisposable | null = null;
 
   const middleware = (api: MiddlewareAPI) => {
     if (disposable === null) {
-      disposable = handleForwardedAction(redialMainWorldApi, api);
+      disposable = handleForwardedAction(globals, api);
     }
 
     // Forward actions to the main process:
     return (next) => (action) => {
       return forwarder(next, action, (redialAction) => {
-        redialMainWorldApi.forwardActionToMain(redialAction);
+        globals.forwardActionToMain(redialAction);
       });
     };
   };
@@ -138,11 +124,11 @@ export function createRedialRendererMiddleware(
   };
 
   const getMainState = async <S extends AnyState = AnyState>(): Promise<S> => {
-    return await redialMainWorldApi.requestMainStateAsync();
+    return await globals.requestMainStateAsync();
   };
 
   const getMainStateSync = <S extends AnyState = AnyState>(): S => {
-    return redialMainWorldApi.requestMainStateSync();
+    return globals.requestMainStateSync();
   };
 
   return Object.assign(middleware, {
@@ -153,18 +139,18 @@ export function createRedialRendererMiddleware(
 }
 
 function handleForwardedAction(
-  redialMainWorldApi: RedialMainWorldApi,
+  globals: RedialGlobals,
   api: MiddlewareAPI,
 ): IDisposable {
   const handleAction = (event: IpcRendererEvent, action: Action): void => {
     api.dispatch(action);
   };
 
-  redialMainWorldApi.addMainActionListener(handleAction);
+  globals.addMainActionListener(handleAction);
 
   return {
     dispose() {
-      redialMainWorldApi.removeMainActionListener(handleAction);
+      globals.removeMainActionListener(handleAction);
     },
   };
 }

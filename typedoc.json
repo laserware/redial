@@ -3,7 +3,7 @@
   "cleanOutputDir": true,
   "entryPoints": [
     "./src/main/index.ts",
-    "./src/preload/index.ts",
+    "./src/sandbox/index.ts",
     "./src/renderer/index.ts",
     "./src/types.ts"
   ],

@@ -5,8 +5,8 @@ Redux IPC abstraction layer that uses middleware to forward actions between the 
 ## Dependencies
 
 - Node.js >= v22
-- TypeScript >= 5
-- Electron >= 30
+- TypeScript >= v5
+- Electron >= v30
 
 ## Usage
 
@@ -145,24 +145,17 @@ See the [Usage](#usage) instructions above for additional information.
 
 The exported preload function was renamed from `exposeRedialInMainWorld` to `preloadRedial`.
 
-### Before (v4)
-
 ```js
 /** src/preload.js */
 
+/* Before */
 import { exposeRedialInMainWorld } from "@laserware/redial/preload";
-
-// Set up the communication layer between the main and renderer processes:
-exposeRedialInMainWorld();
-```
-
-### After (v5)
-
-```js
-/** src/preload.js */
-
+/* After */
 import { preloadRedial } from "@laserware/redial/preload";
 
 // Set up the communication layer between the main and renderer processes:
+/* Before */
+exposeRedialInMainWorld();
+/* After */
 preloadRedial();
 ```

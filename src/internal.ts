@@ -1,5 +1,4 @@
-import type { IpcRendererEvent } from "electron";
-import type { AnyState, RedialAction, RedialMiddlewareHooks } from "./types.js";
+import type { RedialAction, RedialMiddlewareHooks } from "./types.js";
 
 /**
  * Signature of the middleware forwarder function containing logic that is
@@ -75,19 +74,4 @@ export function getMiddlewareForwarder(
 
     return next(action);
   };
-}
-
-export const redialMainWorldApiKey: string = "__laserware_redial__";
-
-export type RedialMainActionListener = (
-  event: IpcRendererEvent,
-  action: RedialAction,
-) => void;
-
-export interface RedialMainWorldApi {
-  forwardActionToMain(action: RedialAction): void;
-  addMainActionListener(listener: RedialMainActionListener): void;
-  removeMainActionListener(listener: RedialMainActionListener): void;
-  requestMainStateAsync<S = AnyState>(): Promise<S>;
-  requestMainStateSync<S = AnyState>(): S;
 }

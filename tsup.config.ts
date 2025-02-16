@@ -25,11 +25,12 @@ export default defineConfig(() => {
   const cjs = (
     processName: "main" | "preload" | "renderer",
     platform: Platform,
+    dirName: string = processName,
   ) => ({
     ...commonOptions,
     name: `${processName} (CJS)`,
     dts: true,
-    entry: { [processName]: `src/${processName}/index.ts` },
+    entry: { [processName]: `src/${dirName}/index.ts` },
     format: "cjs",
     outExtension: () => ({ js: ".cjs" }),
     platform,
@@ -38,11 +39,12 @@ export default defineConfig(() => {
   const esm = (
     processName: "main" | "preload" | "renderer",
     platform: Platform,
+    dirName: string = processName,
   ) => ({
     ...commonOptions,
     name: `${processName} (ESM)`,
     dts: true,
-    entry: { [processName]: `src/${processName}/index.ts` },
+    entry: { [processName]: `src/${dirName}/index.ts` },
     format: "esm",
     outExtension: () => ({ js: ".mjs" }),
     platform,
@@ -52,10 +54,10 @@ export default defineConfig(() => {
 
   return [
     esm("main", "node"),
-    esm("preload", "node"),
+    esm("preload", "node", "sandbox"),
     esm("renderer", "browser"),
     cjs("main", "node"),
-    cjs("preload", "node"),
+    cjs("preload", "node", "sandbox"),
     cjs("renderer", "browser"),
   ] as Options[];
 });

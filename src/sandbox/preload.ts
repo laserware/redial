@@ -1,18 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron";
 
+import { type AnyState, IpcChannel, type RedialAction } from "../types.js";
 import {
+  type RedialGlobals,
   type RedialMainActionListener,
   redialMainWorldApiKey,
-} from "../internal.js";
-import { type AnyState, IpcChannel, type RedialAction } from "../types.js";
-
-export interface RedialGlobals {
-  forwardActionToMain(action: RedialAction): void;
-  addMainActionListener(listener: RedialMainActionListener): void;
-  removeMainActionListener(listener: RedialMainActionListener): void;
-  requestMainStateAsync<S = AnyState>(): Promise<S>;
-  requestMainStateSync<S = AnyState>(): S;
-}
+} from "./globals.js";
 
 /**
  * Adds an entry to the `window` object that sets up the communication layer

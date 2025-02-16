@@ -45,6 +45,7 @@
   "files": [
     "dist",
     "main.d.ts",
+    "preload.d.ts",
     "renderer.d.ts"
   ],
   "keywords": [

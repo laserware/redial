@@ -6,10 +6,10 @@ import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
 import { IpcChannel, type RedialAction } from "../../types.js";
 
 import {
+  type RedialGlobals,
   type RedialMainActionListener,
-  type RedialMainWorldApi,
   redialMainWorldApiKey,
-} from "../../internal.js";
+} from "../../sandbox/globals.js";
 import { createRedialRendererMiddleware } from "../createRendererMiddleware.js";
 
 const counterSlice = createSlice({
@@ -30,7 +30,7 @@ const counterSlice = createSlice({
 
 function getRedialMainWorldApi(
   emitter: EventEmitter = new EventEmitter(),
-): Record<keyof RedialMainWorldApi, Mock<any>> {
+): Record<keyof RedialGlobals, Mock<any>> {
   return {
     forwardActionToMain: mock((action: RedialAction): any => {
       emitter.emit(IpcChannel.FromRenderer, {}, action);
@@ -168,6 +168,6 @@ describe("the createRedialRendererMiddleware function", () => {
 
     expect(() => {
       createRedialRendererMiddleware();
-    }).toThrow(/Unable to configure middleware/);
+    }).toThrow(/Unable to configure Redial middleware/);
   });
 });
