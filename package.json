@@ -44,6 +44,7 @@
   },
   "files": [
     "dist",
+    "src",
     "main.d.ts",
     "preload.d.ts",
     "renderer.d.ts"
@@ -56,7 +57,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/preload.cjs",
+    "./dist/preload.mjs"
+  ],
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "bun run build",
@@ -74,12 +78,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@reduxjs/toolkit": "^2.5.1",
+    "@reduxjs/toolkit": "^2.6.0",
     "@types/bun": "latest",
-    "electron": "^34.2.0",
-    "tsup": "^8.3.6",
-    "typedoc": "^0.27.7",
-    "typescript": "^5.7.3"
+    "electron": "^34.3.0",
+    "tsup": "^8.4.0",
+    "typedoc": "^0.27.9",
+    "typescript": "^5.8.2"
   },
   "peerDependencies": {
     "@laserware/stasis": ">=4",

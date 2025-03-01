@@ -23,15 +23,12 @@ Getting the library working is a three-step process:
 > [security practices](https://www.electronjs.org/docs/latest/tutorial/context-isolation#security-considerations)
 > when using the `ipcRenderer` API.
 
-Call the `preloadRedial` function in a preload script.
+Import the preload script.
 
 ```js
 /** src/preload.js */
 
-import { preloadRedial } from "@laserware/redial/preload";
-
-// Set up the communication layer between the main and renderer processes:
-preloadRedial();
+import "@laserware/redial/preload";
 ```
 
 ### Step 2: Add Redial Middleware to Main Process Redux Store
@@ -158,4 +155,20 @@ import { preloadRedial } from "@laserware/redial/preload";
 exposeRedialInMainWorld();
 /* After */
 preloadRedial();
+```
+
+## Migrating from v5 to v6
+
+The preload file was changed to a side-effect import.
+
+```js
+/** src/preload.js */
+
+/* Before */
+import { preloadRedial } from "@laserware/redial/preload";
+
+preloadRedial();
+
+/* After */
+import "@laserware/redial/preload";
 ```

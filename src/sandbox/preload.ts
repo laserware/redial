@@ -19,7 +19,7 @@ import {
  * [security practices](https://www.electronjs.org/docs/latest/tutorial/context-isolation#security-considerations)
  * by not exposing access to the entire `ipcRenderer` API.
  */
-export function preloadRedial(): void {
+function preloadRedial(): void {
   const globals: RedialGlobals = {
     forwardActionToMain(action: RedialAction): void {
       ipcRenderer.send(IpcChannel.FromRenderer, action);
@@ -44,3 +44,5 @@ export function preloadRedial(): void {
     window[redialMainWorldApiKey] = globals;
   }
 }
+
+preloadRedial();

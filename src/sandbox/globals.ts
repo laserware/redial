@@ -29,7 +29,7 @@ export function getRedialGlobals(): RedialGlobals {
     // biome-ignore format:
     const message = [
       "Unable to configure Redial middleware in the renderer process.",
-      "You may have forgotten to call `preloadRedial` in a preload script from the main process.",
+      "You may have forgotten to import redial in a preload script from the main process.",
     ].join(" ");
 
     throw new Error(message);

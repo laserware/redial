@@ -23,28 +23,28 @@ export default defineConfig(() => {
   type Platform = Options["platform"];
 
   const cjs = (
-    processName: "main" | "preload" | "renderer",
+    name: "main" | "preload" | "renderer",
     platform: Platform,
-    dirName: string = processName,
+    entry: Record<string, string>,
   ) => ({
     ...commonOptions,
-    name: `${processName} (CJS)`,
+    name: `${name} (CJS)`,
     dts: true,
-    entry: { [processName]: `src/${dirName}/index.ts` },
+    entry,
     format: "cjs",
     outExtension: () => ({ js: ".cjs" }),
     platform,
   });
 
   const esm = (
-    processName: "main" | "preload" | "renderer",
+    name: "main" | "preload" | "renderer",
     platform: Platform,
-    dirName: string = processName,
+    entry: Record<string, string>,
   ) => ({
     ...commonOptions,
-    name: `${processName} (ESM)`,
+    name: `${name} (ESM)`,
     dts: true,
-    entry: { [processName]: `src/${dirName}/index.ts` },
+    entry,
     format: "esm",
     outExtension: () => ({ js: ".mjs" }),
     platform,
@@ -53,11 +53,11 @@ export default defineConfig(() => {
   });
 
   return [
-    esm("main", "node"),
-    esm("preload", "node", "sandbox"),
-    esm("renderer", "browser"),
-    cjs("main", "node"),
-    cjs("preload", "node", "sandbox"),
-    cjs("renderer", "browser"),
+    esm("main", "node", { main: "src/main/index.ts" }),
+    esm("preload", "node", { preload: "src/sandbox/preload.ts" }),
+    esm("renderer", "browser", { renderer: "src/renderer/index.ts" }),
+    cjs("main", "node", { main: "src/main/index.ts" }),
+    cjs("preload", "node", { preload: "src/sandbox/preload.ts" }),
+    cjs("renderer", "browser", { renderer: "src/renderer/index.ts" }),
   ] as Options[];
 });
