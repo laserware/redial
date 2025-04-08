@@ -78,15 +78,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@reduxjs/toolkit": "^2.6.0",
-    "@types/bun": "latest",
-    "electron": "^34.3.0",
+    "@reduxjs/toolkit": "^2.6.1",
+    "@types/bun": "^1.2.8",
+    "electron": "^35.1.4",
     "tsup": "^8.4.0",
-    "typedoc": "^0.27.9",
-    "typescript": "^5.8.2"
+    "typedoc": "^0.28.2",
+    "typescript": "^5.8.3"
   },
   "peerDependencies": {
-    "@laserware/stasis": ">=4",
+    "@laserware/stasis": "latest",
     "@reduxjs/toolkit": ">=2",
     "electron": "*"
   },
