@@ -1,9 +1,13 @@
 import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
 import type { IpcRendererEvent } from "electron";
 
-import { getMiddlewareForwarder } from "../internal.js";
 import { type RedialGlobals, getRedialGlobals } from "../sandbox/globals.js";
-import type { AnyState, IDisposable, RedialMiddlewareHooks } from "../types.js";
+import type {
+  AnyState,
+  IDisposable,
+  RedialAction,
+  RedialMiddlewareHooks,
+} from "../types.js";
 
 /**
  * Redial middleware in the renderer process. Provides a `dispose` method to
@@ -100,8 +104,6 @@ export interface RedialRendererMiddleware extends Middleware, IDisposable {
 export function createRedialRendererMiddleware(
   hooks?: RedialMiddlewareHooks,
 ): RedialRendererMiddleware {
-  const forwarder = getMiddlewareForwarder(hooks);
-
   const globals = getRedialGlobals();
 
   let disposable: IDisposable | null = null;
@@ -113,9 +115,39 @@ export function createRedialRendererMiddleware(
 
     // Forward actions to the main process:
     return (next) => (action) => {
-      return forwarder(next, action, (redialAction) => {
-        globals.forwardActionToMain(redialAction);
-      });
+      // Used as a fallback for undefined hooks.
+      const noop = <A = any>(action: A): A => action;
+
+      const beforeSend = hooks?.beforeSend ?? noop;
+      const afterSend = hooks?.afterSend ?? noop;
+
+      let redialAction = action as RedialAction;
+
+      // If the action doesn't adhere to the Flux Standard Action convention,
+      // it isn't forwarded:
+      if (redialAction?.type === undefined) {
+        return next(redialAction);
+      }
+
+      // Some actions are specific to libraries and are intended to be internal.
+      // If that's the case, don't forward them. For example, `redux-form` uses
+      // the `@@` prefix internally:
+      if (redialAction.type.startsWith("@@")) {
+        return next(redialAction);
+      }
+
+      // If the action was already forwarded, don't do it again:
+      if (redialAction.meta?.redial?.forwarded) {
+        return next(redialAction);
+      }
+
+      redialAction = beforeSend(redialAction);
+
+      globals.forwardActionToMain(redialAction);
+
+      afterSend(redialAction);
+
+      return undefined;
     };
   };
 

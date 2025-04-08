@@ -1,10 +1,10 @@
 import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
 import { type IpcMainEvent, ipcMain, webContents } from "electron";
 
-import { getMiddlewareForwarder } from "../internal.js";
 import {
   type IDisposable,
   IpcChannel,
+  type RedialAction,
   type RedialMiddlewareHooks,
 } from "../types.js";
 
@@ -51,8 +51,6 @@ export type RedialMainMiddleware = Middleware & IDisposable;
 export function createRedialMainMiddleware(
   hooks?: RedialMiddlewareHooks,
 ): RedialMainMiddleware {
-  const forwarder = getMiddlewareForwarder(hooks);
-
   const disposables = new Map<HandlerName, IDisposable | undefined>([
     ["forwardAction", undefined],
     ["asyncStateRequest", undefined],
@@ -72,13 +70,51 @@ export function createRedialMainMiddleware(
       disposables.set("syncStateRequest", handleSyncStateRequests(api));
     }
 
-    // Forward actions to the renderer process:
+    // Forward actions to the renderer process. Note that we only assign the
+    // meta property in the main process and _not_ the renderer process. The reason we
+    // do this is to ensure if an action is dispatched from one Electron `BrowserWindow`,
+    // it gets forwarded to all the other windows.
     return (next) => (action) => {
-      return forwarder(next, action, (redialAction) => {
-        for (const contentWindow of webContents.getAllWebContents()) {
-          contentWindow.send(IpcChannel.FromMain, redialAction);
-        }
-      });
+      // Used as a fallback for undefined hooks.
+      const noop = <A = any>(action: A): A => action;
+
+      const beforeSend = hooks?.beforeSend ?? noop;
+      const afterSend = hooks?.afterSend ?? noop;
+
+      let redialAction = action as RedialAction;
+
+      // If the action doesn't adhere to the Flux Standard Action convention,
+      // it isn't forwarded:
+      if (redialAction?.type === undefined) {
+        return next(redialAction);
+      }
+
+      // Some actions are specific to libraries and are intended to be internal.
+      // If that's the case, don't forward them. For example, `redux-form` uses
+      // the `@@` prefix internally:
+      if (redialAction.type.startsWith("@@")) {
+        return next(redialAction);
+      }
+
+      // If the action was already forwarded, don't do it again:
+      if (redialAction.meta?.redial?.forwarded) {
+        return next(redialAction);
+      }
+
+      redialAction = beforeSend(redialAction);
+
+      // We assign the forwarded property _after_ the hook to ensure the
+      // library user doesn't make any changes to `redial.meta`, which would
+      // break the application by causing an infinite dispatch loop:
+      redialAction.meta = { ...redialAction.meta, redial: { forwarded: true } };
+
+      for (const contentWindow of webContents.getAllWebContents()) {
+        contentWindow.send(IpcChannel.FromMain, redialAction);
+      }
+
+      afterSend(redialAction);
+
+      return next(redialAction);
     };
   };
 

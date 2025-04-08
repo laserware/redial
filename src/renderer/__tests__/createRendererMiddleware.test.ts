@@ -100,12 +100,19 @@ describe("the createRedialRendererMiddleware function", () => {
     next.mockClear();
 
     const incrementAction = counterSlice.actions.increment();
-    const result = redialMiddleware(store)(next)(incrementAction) as RedialAction;
-    expect(result.meta.redial).toEqual({ forwarded: true });
-    expect(beforeSend).toHaveBeenCalledWith(result);
-    expect(afterSend).toHaveBeenCalledWith(result);
+    const result = redialMiddleware(store)(next)(incrementAction);
+    expect(beforeSend).toHaveBeenCalledWith(incrementAction);
+    expect(afterSend).toHaveBeenCalledWith(incrementAction);
+    expect(result).toBeUndefined();
 
     type State = { counter: { value: number } };
+
+    const incrementActionWithMeta = Object.assign(counterSlice.actions.increment(), {
+      meta: { redial: { forwarded: true } },
+    });
+    const decrementActionWithMeta = Object.assign(counterSlice.actions.decrement(), {
+      meta: { redial: { forwarded: true } },
+    });
 
     const stateChanges: State[] = [];
 
@@ -114,11 +121,11 @@ describe("the createRedialRendererMiddleware function", () => {
     });
 
     let expected = COUNTER_INITIAL_VALUE - 1;
-    emitter.emit(IpcChannel.FromMain, {}, counterSlice.actions.decrement());
+    emitter.emit(IpcChannel.FromMain, {}, decrementActionWithMeta);
     expect(stateChanges.pop()!.counter.value).toBe(expected);
 
     expected = COUNTER_INITIAL_VALUE;
-    emitter.emit(IpcChannel.FromMain, {}, counterSlice.actions.increment());
+    emitter.emit(IpcChannel.FromMain, {}, incrementActionWithMeta);
     expect(stateChanges.pop()!.counter.value).toBe(expected);
 
     redialMiddleware.dispose();
@@ -138,8 +145,8 @@ describe("the createRedialRendererMiddleware function", () => {
     });
 
     const incrementAction = counterSlice.actions.increment();
-    const result = redialMiddleware(store)(next)(incrementAction) as RedialAction;
-    expect(result.meta.redial).toEqual({ forwarded: true });
+    const result = redialMiddleware(store)(next)(incrementAction);
+    expect(result).toBeUndefined();
   });
 
   it("creates middleware with getter functions for main state", async () => {
