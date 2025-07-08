@@ -22,14 +22,8 @@
       }
     },
     "./preload": {
-      "import": {
-        "types": "./dist/preload.d.ts",
-        "default": "./dist/preload.mjs"
-      },
-      "require": {
-        "types": "./dist/preload.d.cts",
-        "default": "./dist/preload.cjs"
-      }
+      "require": "./dist/preload.cjs",
+      "import": "./dist/preload.mjs"
     },
     "./renderer": {
       "import": {
@@ -46,7 +40,6 @@
     "dist",
     "src",
     "main.d.ts",
-    "preload.d.ts",
     "renderer.d.ts"
   ],
   "keywords": [
@@ -64,29 +57,28 @@
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "bun run build",
-    "preversion": "bun run lint && bun run typecheck",
-    "version": "bun run format && git add -A src",
+    "preversion": "bun run check:biome && bun run check:types && bun run build",
+    "version": "git add -A src",
     "postversion": "git push && git push --tags",
+    "check:biome": "biome check --write src",
+    "check:types": "tsc --noEmit",
     "ci": "biome ci src",
     "docs:generate": "typedoc  --options typedoc.json",
     "docs:serve": "mkdir -p ./site && cd ./site && bunx vite",
-    "format": "biome check --formatter-enabled=true --linter-enabled=false --organize-imports-enabled=true --write src example/src",
-    "lint": "biome lint src example/src",
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
     "example": "cd example && bun run start"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
-    "@reduxjs/toolkit": "^2.6.1",
-    "@types/bun": "^1.2.8",
-    "electron": "^35.1.4",
-    "tsup": "^8.4.0",
-    "typedoc": "^0.28.2",
+    "@biomejs/biome": "2.1.1",
+    "@reduxjs/toolkit": "^2.8.2",
+    "@types/bun": "^1.2.18",
+    "electron": "^37.2.0",
+    "tsup": "^8.5.0",
+    "typedoc": "^0.28.7",
     "typescript": "^5.8.3"
   },
   "peerDependencies": {
-    "@laserware/stasis": "latest",
+    "@laserware/stasis": ">=4",
     "@reduxjs/toolkit": ">=2",
     "electron": "*"
   },

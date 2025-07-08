@@ -40,7 +40,7 @@ export const enum IpcChannel {
  *
  * @remarks
  * The metadata is assigned to the `meta` property of the dispatched action in
- * middleware and forwarded to the opposing process (i.e. main process actions
+ * middleware and forwarded to the opposing process (i.e., main process actions
  * are sent to the renderer process and vice versa).
  *
  * @template P Payload of the forwarded action.
@@ -50,9 +50,9 @@ export type RedialAction<P = any> = AnyAction<P> & {
 };
 
 /**
- * Hooks that run before and after the action is sent from one process to another.
+ * Hooks that run before and after the action are sent from one process to another.
  * This is useful for doing things like ensuring the payload is serialized
- * prior to sending the action, or making a change to the action after it's
+ * before sending the action, or making a change to the action after it's
  * sent to the renderer process.
  */
 export interface RedialMiddlewareHooks {

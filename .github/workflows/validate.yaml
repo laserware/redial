@@ -20,7 +20,7 @@ jobs:
         run: bun run ci
 
       - name: Check Types
-        run: bun run typecheck
+        run: bun run check:types
 
       - name: Run Unit Tests
         run: bun test

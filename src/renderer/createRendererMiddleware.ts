@@ -1,7 +1,7 @@
 import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
 import type { IpcRendererEvent } from "electron";
 
-import { type RedialGlobals, getRedialGlobals } from "../sandbox/globals.js";
+import { getRedialGlobals, type RedialGlobals } from "../sandbox/globals.js";
 import type {
   AnyState,
   IDisposable,
@@ -17,7 +17,7 @@ import type {
 export interface RedialRendererMiddleware extends Middleware, IDisposable {
   /**
    * Returns the current state from the main process asynchronously. This is
-   * useful for syncing the state with the renderer in development mode (i.e.
+   * useful for syncing the state with the renderer in development mode (i.e.,
    * persisting state after refreshing the page). Use this if you don't want
    * to block the main thread while requesting state.
    *
@@ -29,7 +29,7 @@ export interface RedialRendererMiddleware extends Middleware, IDisposable {
 
   /**
    * Returns the current state from the main process synchronously. This is
-   * useful for syncing the state with the renderer in development mode (i.e.
+   * useful for syncing the state with the renderer in development mode (i.e.,
    * persisting state after refreshing the page).
    *
    * > [!CAUTION]
@@ -49,8 +49,8 @@ export interface RedialRendererMiddleware extends Middleware, IDisposable {
 
 /**
  * Whenever an action is fired from the renderer process, forward it to the
- * main process to ensure global state is in sync. The optional `hooks`
- * argument allows you to make changes to the action prior to forwarding it to
+ * main process to ensure the global state is in sync. The optional `hooks`
+ * argument allows you to make changes to the action before forwarding it to
  * the main process and after forwarding to the main process before passing the
  * action to the next middlewares.
  *
@@ -114,7 +114,7 @@ export function createRedialRendererMiddleware(
     }
 
     // Forward actions to the main process:
-    return (next) => (action) => {
+    return (next: (action: unknown) => unknown) => (action: unknown) => {
       // Used as a fallback for undefined hooks.
       const noop = <A = any>(action: A): A => action;
 

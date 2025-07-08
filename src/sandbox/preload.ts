@@ -4,8 +4,10 @@ import { type AnyState, IpcChannel, type RedialAction } from "../types.js";
 import {
   type RedialGlobals,
   type RedialMainActionListener,
-  redialMainWorldApiKey,
+  redialGlobalsApiKey,
 } from "./globals.js";
+
+let isAlreadyExposed = false;
 
 /**
  * Adds an entry to the `window` object that sets up the communication layer
@@ -19,7 +21,11 @@ import {
  * [security practices](https://www.electronjs.org/docs/latest/tutorial/context-isolation#security-considerations)
  * by not exposing access to the entire `ipcRenderer` API.
  */
-function preloadRedial(): void {
+(function exposeRedialGlobals(): void {
+  if (isAlreadyExposed) {
+    return;
+  }
+
   const globals: RedialGlobals = {
     forwardActionToMain(action: RedialAction): void {
       ipcRenderer.send(IpcChannel.FromRenderer, action);
@@ -39,10 +45,10 @@ function preloadRedial(): void {
   };
 
   if (process.contextIsolated) {
-    contextBridge.exposeInMainWorld(redialMainWorldApiKey, globals);
+    contextBridge.exposeInMainWorld(redialGlobalsApiKey, globals);
   } else {
-    window[redialMainWorldApiKey] = globals;
+    window[redialGlobalsApiKey] = globals;
   }
-}
 
-preloadRedial();
+  isAlreadyExposed = true;
+})();

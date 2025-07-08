@@ -1,7 +1,8 @@
 import type { IpcRendererEvent } from "electron";
+
 import type { AnyState, RedialAction } from "../types.js";
 
-export const redialMainWorldApiKey: string = "__laserware_redial__";
+export const redialGlobalsApiKey: string = "__laserware_redial__";
 
 export type RedialMainActionListener = (
   event: IpcRendererEvent,
@@ -23,10 +24,10 @@ declare global {
 }
 
 export function getRedialGlobals(): RedialGlobals {
-  const globals = globalThis[redialMainWorldApiKey];
+  const globals = globalThis[redialGlobalsApiKey];
 
   if (globals === undefined) {
-    // biome-ignore format:
+    // biome-ignore format: Ignore
     const message = [
       "Unable to configure Redial middleware in the renderer process.",
       "You may have forgotten to import redial in a preload script from the main process.",
@@ -35,5 +36,5 @@ export function getRedialGlobals(): RedialGlobals {
     throw new Error(message);
   }
 
-  return globalThis[redialMainWorldApiKey] as RedialGlobals;
+  return globalThis[redialGlobalsApiKey] as RedialGlobals;
 }

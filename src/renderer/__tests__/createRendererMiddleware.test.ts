@@ -1,15 +1,14 @@
-import { type Mock, describe, expect, it, mock } from "bun:test";
+import { describe, expect, it, type Mock, mock } from "bun:test";
 import { EventEmitter } from "node:events";
 
 import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
 
-import { IpcChannel, type RedialAction } from "../../types.js";
-
 import {
   type RedialGlobals,
   type RedialMainActionListener,
-  redialMainWorldApiKey,
+  redialGlobalsApiKey,
 } from "../../sandbox/globals.js";
+import { IpcChannel, type RedialAction } from "../../types.js";
 import { createRedialRendererMiddleware } from "../createRendererMiddleware.js";
 
 const counterSlice = createSlice({
@@ -59,9 +58,9 @@ describe("the createRedialRendererMiddleware function", () => {
 
     const emitter = new EventEmitter();
 
-    globalThis[redialMainWorldApiKey] = getRedialMainWorldApi(emitter);
+    globalThis[redialGlobalsApiKey] = getRedialMainWorldApi(emitter);
 
-    const globalMainWorldApi = globalThis[redialMainWorldApiKey];
+    const globalMainWorldApi = globalThis[redialGlobalsApiKey];
 
     globalMainWorldApi.requestMainStateSync.mockReturnValueOnce({
       counter: { value: COUNTER_INITIAL_VALUE },
@@ -150,9 +149,9 @@ describe("the createRedialRendererMiddleware function", () => {
   });
 
   it("creates middleware with getter functions for main state", async () => {
-    globalThis[redialMainWorldApiKey] = getRedialMainWorldApi();
+    globalThis[redialGlobalsApiKey] = getRedialMainWorldApi();
 
-    const globalMainWorldApi = globalThis[redialMainWorldApiKey];
+    const globalMainWorldApi = globalThis[redialGlobalsApiKey];
 
     const redialMiddleware = createRedialRendererMiddleware();
 
@@ -171,7 +170,7 @@ describe("the createRedialRendererMiddleware function", () => {
   });
 
   it("throws an error if the preload script wasn't run", () => {
-    globalThis[redialMainWorldApiKey] = undefined;
+    globalThis[redialGlobalsApiKey] = undefined;
 
     expect(() => {
       createRedialRendererMiddleware();

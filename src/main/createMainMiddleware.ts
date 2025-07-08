@@ -18,7 +18,7 @@ export type RedialMainMiddleware = Middleware & IDisposable;
 
 /**
  * Creates middleware that forwards dispatched actions to the renderer process
- * to ensure global state is in sync. The optional `hooks` argument allows you
+ * to ensure the global state is in sync. The optional `hooks` argument allows you
  * to make changes to the action prior to forwarding and after forwarding before
  * passing the action to the next middlewares.
  *
@@ -71,10 +71,10 @@ export function createRedialMainMiddleware(
     }
 
     // Forward actions to the renderer process. Note that we only assign the
-    // meta property in the main process and _not_ the renderer process. The reason we
+    // `meta` property in the main process and _not_ the renderer process. The reason we
     // do this is to ensure if an action is dispatched from one Electron `BrowserWindow`,
     // it gets forwarded to all the other windows.
-    return (next) => (action) => {
+    return (next: (action: unknown) => unknown) => (action: unknown) => {
       // Used as a fallback for undefined hooks.
       const noop = <A = any>(action: A): A => action;
 

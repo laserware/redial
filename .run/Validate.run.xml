@@ -1,8 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Validate" type="CompoundRunConfigurationType">
+    <toRun name="Check Biome" type="js.build_tools.npm" />
     <toRun name="Check Types" type="js.build_tools.npm" />
-    <toRun name="Format" type="js.build_tools.npm" />
-    <toRun name="Lint" type="js.build_tools.npm" />
     <toRun name="Tests" type="js.build_tools.npm" />
     <method v="2" />
   </configuration>

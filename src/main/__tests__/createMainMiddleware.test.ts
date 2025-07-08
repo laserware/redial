@@ -1,4 +1,4 @@
-import { type Mock, describe, expect, it, mock } from "bun:test";
+import { describe, expect, it, type Mock, mock } from "bun:test";
 import { EventEmitter } from "node:events";
 
 import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
