@@ -2,14 +2,14 @@ import { describe, expect, it, type Mock, mock } from "bun:test";
 import { EventEmitter } from "node:events";
 
 import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
-
 import {
+  IpcChannel,
+  type RedialAction,
   type RedialGlobals,
   type RedialMainActionListener,
-  redialGlobalsApiKey,
-} from "../../sandbox/globals.js";
-import { IpcChannel, type RedialAction } from "../../types.js";
+} from "../../common/types.js";
 import { createRedialRendererMiddleware } from "../createRendererMiddleware.js";
+import { redialGlobalsApiKey } from "../getRedialGlobals.js";
 
 const counterSlice = createSlice({
   name: "counter",

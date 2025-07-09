@@ -29,7 +29,11 @@
  *
  * @module renderer
  */
-
+export type {
+  RedialAction,
+  RedialMainActionListener,
+  RedialMiddlewareHooks,
+} from "../common/types.js";
 export {
   createRedialRendererMiddleware,
   type RedialRendererMiddleware,

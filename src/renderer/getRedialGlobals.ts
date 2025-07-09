@@ -1,21 +1,6 @@
-import type { IpcRendererEvent } from "electron";
-
-import type { AnyState, RedialAction } from "../types.js";
+import type { RedialGlobals } from "../common/types.js";
 
 export const redialGlobalsApiKey: string = "__laserware_redial__";
-
-export type RedialMainActionListener = (
-  event: IpcRendererEvent,
-  action: RedialAction,
-) => void;
-
-export interface RedialGlobals {
-  forwardActionToMain(action: RedialAction): void;
-  addMainActionListener(listener: RedialMainActionListener): void;
-  removeMainActionListener(listener: RedialMainActionListener): void;
-  requestMainStateAsync<S = AnyState>(): Promise<S>;
-  requestMainStateSync<S = AnyState>(): S;
-}
 
 declare global {
   interface Window {

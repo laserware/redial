@@ -1,13 +1,14 @@
 import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
 import type { IpcRendererEvent } from "electron";
 
-import { getRedialGlobals, type RedialGlobals } from "../sandbox/globals.js";
 import type {
   AnyState,
   IDisposable,
   RedialAction,
+  RedialGlobals,
   RedialMiddlewareHooks,
-} from "../types.js";
+} from "../common/types.js";
+import { getRedialGlobals } from "./getRedialGlobals.js";
 
 /**
  * Redial middleware in the renderer process. Provides a `dispose` method to

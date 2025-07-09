@@ -1,6 +1,6 @@
 import { builtinModules } from "node:module";
 
-import { type Options, defineConfig } from "tsup";
+import { defineConfig, type Options } from "tsup";
 
 export default defineConfig(() => {
   const commonOptions: Options = {
@@ -22,29 +22,21 @@ export default defineConfig(() => {
 
   type Platform = Options["platform"];
 
-  const cjs = (
-    name: "main" | "preload" | "renderer",
-    platform: Platform,
-    entry: Record<string, string>,
-  ) => ({
+  const cjs = (name: "main" | "preload" | "renderer", platform: Platform) => ({
     ...commonOptions,
     name: `${name} (CJS)`,
-    dts: true,
-    entry,
+    dts: name !== "preload",
+    entry: { [name]: `src/${name}/index.ts` },
     format: "cjs",
     outExtension: () => ({ js: ".cjs" }),
     platform,
   });
 
-  const esm = (
-    name: "main" | "preload" | "renderer",
-    platform: Platform,
-    entry: Record<string, string>,
-  ) => ({
+  const esm = (name: "main" | "preload" | "renderer", platform: Platform) => ({
     ...commonOptions,
     name: `${name} (ESM)`,
-    dts: true,
-    entry,
+    dts: name !== "preload",
+    entry: { [name]: `src/${name}/index.ts` },
     format: "esm",
     outExtension: () => ({ js: ".mjs" }),
     platform,
@@ -53,11 +45,11 @@ export default defineConfig(() => {
   });
 
   return [
-    esm("main", "node", { main: "src/main/index.ts" }),
-    esm("preload", "node", { preload: "src/sandbox/preload.ts" }),
-    esm("renderer", "browser", { renderer: "src/renderer/index.ts" }),
-    cjs("main", "node", { main: "src/main/index.ts" }),
-    cjs("preload", "node", { preload: "src/sandbox/preload.ts" }),
-    cjs("renderer", "browser", { renderer: "src/renderer/index.ts" }),
+    esm("main", "node"),
+    esm("preload", "node"),
+    esm("renderer", "browser"),
+    cjs("main", "node"),
+    cjs("preload", "node"),
+    cjs("renderer", "browser"),
   ] as Options[];
 });

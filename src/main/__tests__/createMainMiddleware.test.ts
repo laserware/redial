@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 
 import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
 
-import { IpcChannel, type RedialAction } from "../../types.js";
+import { IpcChannel, type RedialAction } from "../../common/types.js";
 
 type State = { counter: { value: number } };
 

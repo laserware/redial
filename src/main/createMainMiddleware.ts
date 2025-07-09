@@ -6,7 +6,7 @@ import {
   IpcChannel,
   type RedialAction,
   type RedialMiddlewareHooks,
-} from "../types.js";
+} from "../common/types.js";
 
 type HandlerName = "forwardAction" | "asyncStateRequest" | "syncStateRequest";
 

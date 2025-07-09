@@ -1,4 +1,5 @@
 import type { PayloadAction, UnknownAction } from "@reduxjs/toolkit";
+import type { IpcRendererEvent } from "electron";
 
 /**
  * Represents a resource that can be cleaned up by calling the `dispose` method.
@@ -73,4 +74,17 @@ export interface RedialMiddlewareHooks {
    * @param action Action after forwarding.
    */
   afterSend?<P = any>(action: RedialAction<P>): RedialAction<P>;
+}
+
+export type RedialMainActionListener = (
+  event: IpcRendererEvent,
+  action: RedialAction,
+) => void;
+
+export interface RedialGlobals {
+  forwardActionToMain(action: RedialAction): void;
+  addMainActionListener(listener: RedialMainActionListener): void;
+  removeMainActionListener(listener: RedialMainActionListener): void;
+  requestMainStateAsync<S = AnyState>(): Promise<S>;
+  requestMainStateSync<S = AnyState>(): S;
 }

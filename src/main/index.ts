@@ -28,7 +28,11 @@
  *
  * @module main
  */
-
+export type {
+  RedialAction,
+  RedialMainActionListener,
+  RedialMiddlewareHooks,
+} from "../common/types.js";
 export {
   createRedialMainMiddleware,
   type RedialMainMiddleware,

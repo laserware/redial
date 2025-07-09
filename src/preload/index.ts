@@ -1,11 +1,12 @@
 import { contextBridge, ipcRenderer } from "electron";
-
-import { type AnyState, IpcChannel, type RedialAction } from "../types.js";
 import {
+  type AnyState,
+  IpcChannel,
+  type RedialAction,
   type RedialGlobals,
   type RedialMainActionListener,
-  redialGlobalsApiKey,
-} from "./globals.js";
+} from "../common/types.js";
+import { redialGlobalsApiKey } from "../renderer/getRedialGlobals.js";
 
 let isAlreadyExposed = false;
 
